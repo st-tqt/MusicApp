@@ -1,0 +1,16 @@
+{
+  "songs": [
+    {
+      "id": "1121429554",
+      "title": "Chạy Về Khóc Với Anh",
+      "album": "Chạy Về Khóc Với Anh(Single)",
+      "artist": "ERIK",
+      "source": "https://github.com/st-tqt/my-music/raw/refs/heads/main/1121429554.mp3",
+      "image": "",
+      "duration": 224,
+      "favorite": "false",
+      "counter": 20,
+      "replay": 0
+    }
+  ]
+}

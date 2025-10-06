@@ -47,6 +47,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   @override
   void initState() {
     super.initState();
+
     _currentAnimationPosotion = 0.0;
     _song = widget.playingSong;
     _imageAnimationController = AnimationController(
@@ -127,20 +128,20 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                             _song.title,
                             style: Theme.of(context).textTheme.bodyMedium!
                                 .copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).textTheme.bodyMedium!.color,
-                                ),
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium!.color,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             _song.artist,
                             style: Theme.of(context).textTheme.bodyMedium!
                                 .copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).textTheme.bodyMedium!.color,
-                                ),
+                              color: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium!.color,
+                            ),
                           ),
                         ],
                       ),

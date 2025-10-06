@@ -17,7 +17,7 @@ class RemoteDataSource implements DataSource {
       return null;
     }
     List<Song> songs = (response as List)
-        .map((song) => Song.fromJson(song as Map<String, dynamic>))
+        .map((song) => Song.fromMap(song as Map<String, dynamic>))
         .toList();
     return songs;
   }
@@ -29,8 +29,9 @@ class LocalDataSource implements DataSource {
     final String response = await rootBundle.loadString('assets/songs.json');
     final jsonBody = jsonDecode(response) as Map;
     final songList = jsonBody['songs'] as List;
-    List<Song> songs = songList.map((song) => Song.fromJson(song)).toList();
+    List<Song> songs = songList
+        .map((song) => Song.fromMap(song as Map<String, dynamic>))
+        .toList();
     return songs;
   }
-
 }

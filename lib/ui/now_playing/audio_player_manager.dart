@@ -1,12 +1,18 @@
+import 'package:flutter/cupertino.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
 
 class AudioPlayerManager {
+  static AudioPlayerManager? _instance;
   AudioPlayerManager._internal();
-  static final AudioPlayerManager _instance = AudioPlayerManager._internal();
-  factory AudioPlayerManager() => _instance;
+
+  factory AudioPlayerManager() {
+    _instance ??= AudioPlayerManager._internal();
+    return _instance!;
+  }
 
   final player = AudioPlayer();
+
   Stream<DurationState>? durationState;
   String songUrl = '';
 
@@ -14,7 +20,7 @@ class AudioPlayerManager {
     durationState = Rx.combineLatest2<Duration, PlaybackEvent, DurationState>(
       player.positionStream,
       player.playbackEventStream,
-      (position, playbackEvent) => DurationState(
+          (position, playbackEvent) => DurationState(
         progress: position,
         buffered: playbackEvent.bufferedPosition,
         total: playbackEvent.duration,
@@ -34,6 +40,10 @@ class AudioPlayerManager {
 
   void dispose() {
     player.dispose();
+  }
+
+  static void reset() {
+    _instance = AudioPlayerManager._internal();
   }
 }
 

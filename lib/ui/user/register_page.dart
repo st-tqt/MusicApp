@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../data/repository/user_repository.dart';
 import '../../data/model/user.dart';
 
@@ -13,17 +16,29 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _nameController = TextEditingController();
+  File? _avatarFile;
   final UserRepository _userRepository = UserRepository();
   bool _isLoading = false;
+
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() {
+        _avatarFile = File(picked.path);
+      });
+    }
+  }
 
   Future<void> _register() async {
     setState(() => _isLoading = true);
 
     try {
+      // _pickImage();
       UserModel? user = await _userRepository.register(
         _nameController.text.trim(),
         _emailController.text.trim(),
         _passwordController.text.trim(),
+        _avatarFile,
       );
 
       if (user != null && mounted) {
@@ -55,17 +70,34 @@ class _RegisterPageState extends State<RegisterPage> {
                 decoration: const InputDecoration(labelText: "Tên"),
               ),
               const SizedBox(height: 12),
+
               TextField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: "Email"),
               ),
               const SizedBox(height: 12),
+
               TextField(
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: "Mật khẩu"),
                 obscureText: true,
               ),
               const SizedBox(height: 24),
+
+              GestureDetector(
+                onTap: _pickImage, // gọi hàm chọn ảnh
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.grey[300],
+                  backgroundImage:
+                  _avatarFile != null ? FileImage(_avatarFile!) : null,
+                  child: _avatarFile == null
+                      ? const Icon(Icons.camera_alt, size: 40, color: Colors.white70)
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 16),
+
               ElevatedButton(
                 onPressed: _isLoading ? null : _register,
                 child: _isLoading

@@ -20,8 +20,8 @@ class UserViewModel {
   final StreamController<UserModel?> userStream =
   StreamController<UserModel?>.broadcast();
 
-  void loadFirstUser() async {
-    final user = await _repository.fetchFirstUser();
+  loadCurrentUser() async {
+    final user = await _repository.fetchCurrentUser();
     userStream.add(user);
   }
 

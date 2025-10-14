@@ -30,7 +30,7 @@ class _AccountPageState extends State<AccountPage> {
   void initState() {
     super.initState();
     _viewModel = UserViewModel();
-    _viewModel.loadFirstUser();
+    _viewModel.loadCurrentUser();
     _viewModel.userStream.stream.listen((user) {
       setState(() {
         _user = user;

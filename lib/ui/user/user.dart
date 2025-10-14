@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/model/user.dart';
 import '../home/viewmodel.dart';
 import '../now_playing/audio_player_manager.dart';
+import 'favorite_page.dart';
 
 class AccountTab extends StatelessWidget {
   AccountTab({super.key});
@@ -94,6 +95,10 @@ class _AccountPageState extends State<AccountPage> {
                   title: const Text("My Playlists"),
                   onTap: () {
                     // TODO: mở danh sách playlist
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const FavoriteTab()),
+                    );
                   },
                 ),
                 const Divider(height: 1),
@@ -102,6 +107,7 @@ class _AccountPageState extends State<AccountPage> {
                   title: const Text("Settings"),
                   onTap: () {
                     // TODO: mở tab settings
+
                   },
                 ),
                 const Divider(height: 1),

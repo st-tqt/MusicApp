@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../../data/model/song.dart';
+import '../../data/repository/favorite_repository.dart';
 import 'audio_player_manager.dart';
 
 class NowPlaying extends StatelessWidget {
@@ -44,6 +45,11 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   bool _isShuffle = false;
   late LoopMode _loopMode;
 
+  // Thêm repository và state cho favorite
+  final _favoriteRepository = DefaultFavoriteRepository();
+  bool _isFavorite = false;
+  bool _isLoadingFavorite = false;
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +69,62 @@ class _NowPlayingPageState extends State<NowPlayingPage>
     }
     _selectedItemIndex = widget.songs.indexOf(widget.playingSong);
     _loopMode = LoopMode.off;
+
+    // Load trạng thái favorite ban đầu
+    _checkFavoriteStatus();
+  }
+
+  // Kiểm tra xem bài hát có được yêu thích không
+  Future<void> _checkFavoriteStatus() async {
+    final isFav = await _favoriteRepository.isFavorite(_song.id);
+    if (mounted) {
+      setState(() {
+        _isFavorite = isFav;
+      });
+    }
+  }
+
+  // Toggle favorite khi bấm nút tim
+  Future<void> _toggleFavorite() async {
+    if (_isLoadingFavorite) return;
+
+    setState(() {
+      _isLoadingFavorite = true;
+    });
+
+    final success = await _favoriteRepository.toggleFavorite(_song.id);
+
+    if (success) {
+      setState(() {
+        _isFavorite = !_isFavorite;
+        _isLoadingFavorite = false;
+      });
+
+      // Hiển thị thông báo
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _isFavorite ? 'Đã thêm vào yêu thích' : 'Đã xóa khỏi yêu thích',
+            ),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+    } else {
+      setState(() {
+        _isLoadingFavorite = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Có lỗi xảy ra, vui lòng thử lại'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -128,27 +190,42 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                             _song.title,
                             style: Theme.of(context).textTheme.bodyMedium!
                                 .copyWith(
-                              color: Theme.of(
-                                context,
-                              ).textTheme.bodyMedium!.color,
-                            ),
+                                  color: Theme.of(
+                                    context,
+                                  ).textTheme.bodyMedium!.color,
+                                ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             _song.artist,
                             style: Theme.of(context).textTheme.bodyMedium!
                                 .copyWith(
-                              color: Theme.of(
-                                context,
-                              ).textTheme.bodyMedium!.color,
-                            ),
+                                  color: Theme.of(
+                                    context,
+                                  ).textTheme.bodyMedium!.color,
+                                ),
                           ),
                         ],
                       ),
+
                       IconButton(
-                        onPressed: () {},
-                        icon: Icon(Icons.favorite_outline),
-                        color: Theme.of(context).colorScheme.primary,
+                        onPressed: _isLoadingFavorite ? null : _toggleFavorite,
+                        icon: _isLoadingFavorite
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Icon(
+                                _isFavorite
+                                    ? Icons.favorite
+                                    : Icons.favorite_outline,
+                              ),
+                        color: _isFavorite
+                            ? Colors.red
+                            : Theme.of(context).colorScheme.primary,
                       ),
                     ],
                   ),

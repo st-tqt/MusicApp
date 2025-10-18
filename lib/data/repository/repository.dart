@@ -4,6 +4,7 @@ import '../model/song.dart';
 
 abstract interface class Repository {
   Future<List<Song>?> loadData();
+  Future<bool> incrementCounter(String songId);
 }
 
 class DefaultRepository implements Repository {
@@ -23,5 +24,10 @@ class DefaultRepository implements Repository {
       songs.addAll(remoteSongs);
     }
     return songs;
+  }
+
+  @override
+  Future<bool> incrementCounter(String songId) async {
+    return await _remoteDataSource.incrementCounter(songId);
   }
 }

@@ -7,6 +7,7 @@ class Song {
     required this.source,
     required this.image,
     required this.duration,
+    required this.counter,
   });
 
   factory Song.fromMap(Map<String, dynamic> map) {
@@ -18,6 +19,7 @@ class Song {
       source: map['source'] as String,
       image: map['image'] as String? ?? '',
       duration: map['duration'] as int? ?? 0,
+      counter: map['counter'] as int? ?? 0,
     );
   }
 
@@ -28,6 +30,7 @@ class Song {
   String source;
   String image;
   int duration;
+  int counter;
 
   @override
   bool operator ==(Object other) =>
@@ -40,6 +43,6 @@ class Song {
   @override
   String toString() {
     return 'Song{id: $id, title: $title, album: $album, artist: $artist, '
-        'source: $source, image: $image, duration: $duration}';
+        'source: $source, image: $image, duration: $duration, counter: $counter}';
   }
 }

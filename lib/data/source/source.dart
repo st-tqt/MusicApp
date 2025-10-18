@@ -21,6 +21,31 @@ class RemoteDataSource implements DataSource {
         .toList();
     return songs;
   }
+
+  @override
+  Future<bool> incrementCounter(String songId) async {
+    try {
+      // Lấy counter hiện tại
+      final response = await supabase
+          .from('songs')
+          .select('counter')
+          .eq('id', songId)
+          .single();
+
+      final currentCounter = response['counter'] as int? ?? 0;
+
+      // Cập nhật counter tăng lên 1
+      await supabase
+          .from('songs')
+          .update({'counter': currentCounter + 1})
+          .eq('id', songId);
+
+      return true;
+    } catch (e) {
+      print('Error incrementing counter: $e');
+      return false;
+    }
+  }
 }
 
 class LocalDataSource implements DataSource {

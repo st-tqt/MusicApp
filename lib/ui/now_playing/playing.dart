@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 
 import '../../data/model/song.dart';
+import '../../data/repository/repository.dart';
 import '../../data/repository/favorite_repository.dart';
 import 'audio_player_manager.dart';
 
@@ -47,8 +48,12 @@ class _NowPlayingPageState extends State<NowPlayingPage>
 
   // Thêm repository và state cho favorite
   final _favoriteRepository = DefaultFavoriteRepository();
+  final _repository = DefaultRepository();
   bool _isFavorite = false;
   bool _isLoadingFavorite = false;
+
+  // Track bài hát đã được đếm counter chưa
+  String? _countedSongId;
 
   @override
   void initState() {
@@ -61,6 +66,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
       duration: const Duration(milliseconds: 12000),
     );
     _audioPlayerManager = AudioPlayerManager();
+
     if (_audioPlayerManager.songUrl.compareTo(_song.source) != 0) {
       _audioPlayerManager.updateSongUrl(_song.source);
       _audioPlayerManager.prepare(isNewSong: true);
@@ -72,6 +78,32 @@ class _NowPlayingPageState extends State<NowPlayingPage>
 
     // Load trạng thái favorite ban đầu
     _checkFavoriteStatus();
+
+    // Tăng counter cho bài hát đầu tiên
+    _incrementSongCounter(_song.id);
+
+    _audioPlayerManager.setPlaylist(widget.songs, _selectedItemIndex);
+    _audioPlayerManager.setLoopMode(_loopMode);
+    _audioPlayerManager.onSongChanged = (song) {
+      setState(() {
+        _song = song;
+        _selectedItemIndex = widget.songs.indexOf(song);
+        _checkFavoriteStatus();
+        _incrementSongCounter(song.id);
+
+        _stopRotationAnimation();
+        _resetRotationAnimation();
+      });
+    };
+  }
+
+  // Tăng counter cho bài hát
+  Future<void> _incrementSongCounter(String songId) async {
+    // Chỉ tăng counter nếu bài hát chưa được đếm
+    if (_countedSongId == songId) return;
+
+    _countedSongId = songId;
+    await _repository.incrementCounter(songId);
   }
 
   // Kiểm tra xem bài hát có được yêu thích không
@@ -363,35 +395,14 @@ class _NowPlayingPageState extends State<NowPlayingPage>
             size: 48,
           );
         } else {
-          if (processingState == ProcessingState.completed) {
-            _stopRotationAnimation();
-            _resetRotationAnimation();
-            if (_loopMode == LoopMode.one) {
-              // Lặp lại bài hiện tại
-              _audioPlayerManager.player.seek(Duration.zero);
-              _audioPlayerManager.player.play();
-              _playRotationAnimation();
-            } else {
-              // Chuyển sang bài tiếp theo và cập nhật UI
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                setState(() {
-                  _setNextSong();
-                });
-              });
-            }
-          }
+          //Đang phát
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _playRotationAnimation();
+          });
           return MediaButtonControl(
             function: () {
-              setState(() {
-                if (_loopMode == LoopMode.one) {
-                  _audioPlayerManager.player.seek(Duration.zero);
-                  _audioPlayerManager.player.play();
-                  _resetRotationAnimation();
-                  _playRotationAnimation();
-                } else {
-                  _setNextSong();
-                }
-              });
+              _audioPlayerManager.player.pause();
+              _pauseRotationAnimation();
             },
             icon: Icons.replay,
             color: null,
@@ -405,6 +416,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   void _setShuffle() {
     setState(() {
       _isShuffle = !_isShuffle;
+      _audioPlayerManager.setShuffle(_isShuffle);
     });
   }
 
@@ -418,27 +430,31 @@ class _NowPlayingPageState extends State<NowPlayingPage>
     setState(() {
       int newIndex;
       if (_isShuffle) {
-        // Chọn ngẫu nhiên một bài hát khác với bài hiện tại
         var random = Random();
         do {
-          newIndex = random.nextInt(widget.songs.length - 1);
+          newIndex = random.nextInt(widget.songs.length);
         } while (newIndex == _selectedItemIndex && widget.songs.length > 1);
       } else {
         if (_selectedItemIndex < widget.songs.length - 1) {
           newIndex = _selectedItemIndex + 1;
-        }
-        // Nếu ở chế độ loop all và đang ở bài cuối, quay lại bài đầu
-        else if (_loopMode == LoopMode.all &&
+        } else if (_loopMode == LoopMode.all &&
             _selectedItemIndex == widget.songs.length - 1) {
           newIndex = 0;
         } else {
-          return; // Nếu không ở chế độ loop và đang ở bài cuối, không làm gì
+          return;
         }
       }
 
       _selectedItemIndex = newIndex;
+      _audioPlayerManager.updateCurrentIndex(newIndex);
       _song = widget.songs[_selectedItemIndex];
       _audioPlayerManager.updateSongUrl(_song.source);
+
+      _incrementSongCounter(_song.id);
+      _checkFavoriteStatus();
+
+      _stopRotationAnimation();
+      _resetRotationAnimation();
     });
   }
 
@@ -448,25 +464,30 @@ class _NowPlayingPageState extends State<NowPlayingPage>
     setState(() {
       int newIndex;
       if (_isShuffle) {
-        // Chọn ngẫu nhiên một bài hát khác với bài hiện tại
         var random = Random();
         do {
           newIndex = random.nextInt(widget.songs.length);
         } while (newIndex == _selectedItemIndex && widget.songs.length > 1);
       } else {
-        // Nếu ở chế độ loop all và đang ở bài đầu, quay lại bài cuối
         if (_loopMode == LoopMode.all && _selectedItemIndex == 0) {
           newIndex = widget.songs.length - 1;
         } else if (_selectedItemIndex > 0) {
           newIndex = _selectedItemIndex - 1;
         } else {
-          return; // Nếu không ở chế độ loop và đang ở bài đầu, không làm gì
+          return;
         }
       }
 
       _selectedItemIndex = newIndex;
+      _audioPlayerManager.updateCurrentIndex(newIndex);
       _song = widget.songs[_selectedItemIndex];
-      _audioPlayerManager.updateSongUrl(_song.source!);
+      _audioPlayerManager.updateSongUrl(_song.source);
+
+      _incrementSongCounter(_song.id);
+      _checkFavoriteStatus();
+
+      _stopRotationAnimation();
+      _resetRotationAnimation();
     });
   }
 
@@ -480,6 +501,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
     }
     setState(() {
       _audioPlayerManager.player.setLoopMode(_loopMode);
+      _audioPlayerManager.setLoopMode(_loopMode);
     });
   }
 

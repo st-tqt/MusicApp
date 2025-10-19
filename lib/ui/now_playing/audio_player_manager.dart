@@ -23,7 +23,7 @@ class AudioPlayerManager {
 
   List<Song>? _playlist;
   int _currentIndex = 0;
-  LoopMode _loopMode = LoopMode.off;
+  LoopMode loopMode = LoopMode.off;
   bool _isShuffle = false;
   Function(Song)? onSongChanged;
 
@@ -63,7 +63,7 @@ class AudioPlayerManager {
   }
 
   void _handleSongCompleted() {
-    if (_loopMode == LoopMode.one) {
+    if (loopMode == LoopMode.one) {
       player.seek(Duration.zero);
       player.play();
       return;
@@ -78,7 +78,7 @@ class AudioPlayerManager {
     } else {
       nextIndex = _currentIndex + 1;
       if (nextIndex >= _playlist!.length) {
-        if (_loopMode == LoopMode.all) {
+        if (loopMode == LoopMode.all) {
           nextIndex = 0;
         } else {
           return; // Dừng nếu hết playlist và không loop
@@ -115,8 +115,7 @@ class AudioPlayerManager {
   }
 
   void setLoopMode(LoopMode mode) {
-    _loopMode = mode;
-    player.setLoopMode(mode);
+    loopMode = mode;
   }
 
   void setShuffle(bool shuffle) {

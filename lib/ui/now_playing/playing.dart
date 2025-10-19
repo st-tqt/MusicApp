@@ -74,7 +74,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
       _audioPlayerManager.prepare(isNewSong: false);
     }
     _selectedItemIndex = widget.songs.indexOf(widget.playingSong);
-    _loopMode = LoopMode.off;
+    _loopMode = _audioPlayerManager.loopMode;
 
     // Load trạng thái favorite ban đầu
     _checkFavoriteStatus();
@@ -83,7 +83,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
     _incrementSongCounter(_song.id);
 
     _audioPlayerManager.setPlaylist(widget.songs, _selectedItemIndex);
-    _audioPlayerManager.setLoopMode(_loopMode);
+
     _audioPlayerManager.onSongChanged = (song) {
       setState(() {
         _song = song;
@@ -500,7 +500,6 @@ class _NowPlayingPageState extends State<NowPlayingPage>
       _loopMode = LoopMode.off;
     }
     setState(() {
-      _audioPlayerManager.player.setLoopMode(_loopMode);
       _audioPlayerManager.setLoopMode(_loopMode);
     });
   }

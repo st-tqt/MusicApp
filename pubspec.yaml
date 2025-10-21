@@ -41,6 +41,7 @@ dependencies:
   supabase_flutter: ^2.10.1
   flutter_phoenix: ^1.1.1
   image_picker: ^1.1.2
+  marquee: ^2.3.0
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,5 @@
 import 'package:music_app/data/source/source.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../model/song.dart';
 
@@ -29,5 +30,19 @@ class DefaultRepository implements Repository {
   @override
   Future<bool> incrementCounter(String songId) async {
     return await _remoteDataSource.incrementCounter(songId);
+  }
+
+  @override
+  Future<List<Song>?> loadSongsByIds(List<String> songIds) async {
+    // Implementation tùy thuộc vào cách bạn lấy songs
+    // Ví dụ:
+    final response = await Supabase.instance.client
+        .from('songs')
+        .select()
+        .inFilter('id', songIds);
+
+    final List<dynamic> data = response as List<dynamic>;
+    // Ánh xạ từng phần tử JSON thành đối tượng Song
+    return data.map((item) => Song.fromMap(item as Map<String, dynamic>)).toList();
   }
 }

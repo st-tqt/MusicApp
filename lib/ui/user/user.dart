@@ -48,10 +48,21 @@ class _AccountPageState extends State<AccountPage> {
   @override
   Widget build(BuildContext context) {
     if (_user == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        backgroundColor: Color(0xFF170F23),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF9B4DE0)),
+        ),
+      );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text("Account"), centerTitle: true),
+      backgroundColor: const Color(0xFF170F23),
+      appBar: AppBar(
+        title: const Text("Account", style: TextStyle(color: Colors.white)),
+        centerTitle: true,
+        backgroundColor: const Color(0xFF170F23),
+        elevation: 0,
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -68,8 +79,18 @@ class _AccountPageState extends State<AccountPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text(_user!.name, style: Theme.of(context).textTheme.titleLarge),
-                Text(_user!.email, style: Theme.of(context).textTheme.bodyMedium),
+                Text(
+                  _user!.name,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  _user!.email,
+                  style: const TextStyle(fontSize: 14, color: Colors.white60),
+                ),
               ],
             ),
           ),
@@ -77,45 +98,86 @@ class _AccountPageState extends State<AccountPage> {
 
           // Các lựa chọn
           Card(
+            color: const Color(0xFF2A2139),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.edit),
-                  title: const Text("Edit Profile"),
+                  leading: const Icon(Icons.edit, color: Colors.white),
+                  title: const Text(
+                    "Edit Profile",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: Colors.white60,
+                  ),
                   onTap: () {
                     // TODO: chuyển sang trang chỉnh sửa hồ sơ
                   },
                 ),
-                const Divider(height: 1),
+                Divider(
+                  height: 1,
+                  color: const Color(0xFF3D3153),
+                  indent: 16,
+                  endIndent: 16,
+                ),
                 ListTile(
-                  leading: const Icon(Icons.playlist_play),
-                  title: const Text("My Playlists"),
+                  leading: const Icon(Icons.playlist_play, color: Colors.white),
+                  title: const Text(
+                    "My Playlists",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: Colors.white60,
+                  ),
                   onTap: () {
-                    // TODO: mở danh sách playlist
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const FavoriteTab()),
+                      MaterialPageRoute(
+                        builder: (context) => const FavoriteTab(),
+                      ),
                     );
                   },
                 ),
-                const Divider(height: 1),
+                Divider(
+                  height: 1,
+                  color: const Color(0xFF3D3153),
+                  indent: 16,
+                  endIndent: 16,
+                ),
                 ListTile(
-                  leading: const Icon(Icons.settings),
-                  title: const Text("Settings"),
+                  leading: const Icon(Icons.settings, color: Colors.white),
+                  title: const Text(
+                    "Settings",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: Colors.white60,
+                  ),
                   onTap: () {
                     // TODO: mở tab settings
-
                   },
                 ),
-                const Divider(height: 1),
+                Divider(
+                  height: 1,
+                  color: const Color(0xFF3D3153),
+                  indent: 16,
+                  endIndent: 16,
+                ),
                 ListTile(
-                  leading: const Icon(Icons.logout, color: Colors.red),
+                  leading: const Icon(Icons.logout, color: Color(0xFF9B4DE0)),
                   title: const Text(
                     "Log Out",
-                    style: TextStyle(color: Colors.red),
+                    style: TextStyle(color: Color(0xFF9B4DE0)),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: Colors.white60,
                   ),
                   onTap: () {
                     _showLogoutDialog(context);
@@ -139,14 +201,16 @@ class _AccountPageState extends State<AccountPage> {
           actions: [
             CupertinoDialogAction(
               isDestructiveAction: true,
+              //logout
               onPressed: () async {
                 Navigator.pop(context);
-                // TODO: xử lý log out ở đây
-                // Xóa session Supabase
+                final audioPlayer = AudioPlayerManager();
+                await audioPlayer.player.stop();
+                AudioPlayerManager.reset();
                 await Supabase.instance.client.auth.signOut();
-
-                // Restart toàn bộ app
-                Phoenix.rebirth(context);
+                if (context.mounted) {
+                  Phoenix.rebirth(context);
+                }
               },
               child: const Text("Log Out"),
             ),

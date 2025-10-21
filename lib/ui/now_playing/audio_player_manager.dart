@@ -9,6 +9,7 @@ import '../../data/model/song.dart';
 
 class AudioPlayerManager {
   static AudioPlayerManager? _instance;
+
   AudioPlayerManager._internal();
 
   factory AudioPlayerManager() {
@@ -25,16 +26,20 @@ class AudioPlayerManager {
   int _currentIndex = 0;
   LoopMode loopMode = LoopMode.off;
   bool _isShuffle = false;
-  Function(Song)? onSongChanged;
 
-  StreamSubscription<PlayerState>? _playerStateSubscription; // THÊM biến này
+  // THAY ĐỔI: Dùng StreamController thay vì callback
+  final _songChangedController = StreamController<Song>.broadcast();
+
+  Stream<Song> get songChangedStream => _songChangedController.stream;
+
+  StreamSubscription<PlayerState>? _playerStateSubscription;
   bool _isListenerInitialized = false;
 
   void prepare({bool isNewSong = false}) {
     durationState = Rx.combineLatest2<Duration, PlaybackEvent, DurationState>(
       player.positionStream,
       player.playbackEventStream,
-          (position, playbackEvent) => DurationState(
+      (position, playbackEvent) => DurationState(
         progress: position,
         buffered: playbackEvent.bufferedPosition,
         total: playbackEvent.duration,
@@ -53,9 +58,13 @@ class AudioPlayerManager {
 
     if (isNewSong && songUrl.isNotEmpty) {
       player.setUrl(songUrl).then((_) {
-        player.play(); // Tự động phát sau khi tải URL mới
+        player.play();
       });
     }
+  }
+
+  void notifySongChanged(Song song) {
+    _songChangedController.add(song);
   }
 
   void updateCurrentIndex(int index) {
@@ -90,8 +99,8 @@ class AudioPlayerManager {
     final nextSong = _playlist![nextIndex];
     updateSongUrl(nextSong.source);
 
-    // Thông báo cho UI cập nhật
-    onSongChanged?.call(nextSong);
+    // THAY ĐỔI: Phát sự kiện qua Stream
+    _songChangedController.add(nextSong);
   }
 
   void updateSongUrl(String url) {
@@ -99,14 +108,28 @@ class AudioPlayerManager {
     prepare(isNewSong: true);
   }
 
-  void dispose() {
-    _playerStateSubscription?.cancel();
-    player.dispose();
+  Future<void> dispose() async {
+    try {
+      await player.stop();
+      await _playerStateSubscription?.cancel();
+      _playerStateSubscription = null;
+      await _songChangedController.close();
+
+      await player.dispose();
+
+      _isListenerInitialized = false;
+    } catch (e) {
+      print('Error disposing AudioPlayerManager: $e');
+    }
   }
 
-  static void reset() {
-    _instance?._playerStateSubscription?.cancel();
-    _instance = AudioPlayerManager._internal();
+  static Future<void> reset() async {
+    if (_instance != null) {
+      await _instance!.dispose();
+      _instance = null;
+    } else {
+      print('AudioPlayerManager singleton was already null');
+    }
   }
 
   void setPlaylist(List<Song> songs, int startIndex) {

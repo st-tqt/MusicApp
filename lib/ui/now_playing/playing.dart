@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:async';
 
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/cupertino.dart';
@@ -8,6 +9,7 @@ import 'package:just_audio/just_audio.dart';
 import '../../data/model/song.dart';
 import '../../data/repository/repository.dart';
 import '../../data/repository/favorite_repository.dart';
+import '../../data/repository/listening_history_repository.dart';
 import 'audio_player_manager.dart';
 
 class NowPlaying extends StatelessWidget {
@@ -46,14 +48,18 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   bool _isShuffle = false;
   late LoopMode _loopMode;
 
-  // Thêm repository và state cho favorite
   final _favoriteRepository = DefaultFavoriteRepository();
   final _repository = DefaultRepository();
+  final _listeningHistoryRepository = DefaultListeningHistoryRepository();
+  String? _lastHistorySongId;
+
   bool _isFavorite = false;
   bool _isLoadingFavorite = false;
 
-  // Track bài hát đã được đếm counter chưa
   String? _countedSongId;
+
+  // THÊM: StreamSubscription để lắng nghe thay đổi bài hát
+  StreamSubscription<Song>? _songChangedSubscription;
 
   @override
   void initState() {
@@ -65,48 +71,81 @@ class _NowPlayingPageState extends State<NowPlayingPage>
       vsync: this,
       duration: const Duration(milliseconds: 12000),
     );
+
     _audioPlayerManager = AudioPlayerManager();
 
-    if (_audioPlayerManager.songUrl.compareTo(_song.source) != 0) {
-      _audioPlayerManager.updateSongUrl(_song.source);
+    final currentUrl = _audioPlayerManager.songUrl;
+    final newUrl = _song.source;
+
+    if (currentUrl.isEmpty) {
+      // TRƯỜNG HỢP 1: Chưa có bài nào (lần đầu mở app)
+      _audioPlayerManager.updateSongUrl(newUrl);
       _audioPlayerManager.prepare(isNewSong: true);
+
+    } else if (currentUrl != newUrl) {
+      // TRƯỜNG HỢP 2: Đang phát bài KHÁC → Chuyển sang bài mới
+      _audioPlayerManager.player.stop();
+      _audioPlayerManager.updateSongUrl(newUrl);
+      _audioPlayerManager.prepare(isNewSong: true);
+
     } else {
+      // TRƯỜNG HỢP 3: Đang phát ĐÚNG BÀI NÀY → Giữ nguyên, chỉ setup lại UI
       _audioPlayerManager.prepare(isNewSong: false);
+
+      // Sync lại animation với trạng thái player
+      if (_audioPlayerManager.player.playing) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _playRotationAnimation();
+        });
+      }
     }
+
     _selectedItemIndex = widget.songs.indexOf(widget.playingSong);
     _loopMode = _audioPlayerManager.loopMode;
 
-    // Load trạng thái favorite ban đầu
     _checkFavoriteStatus();
-
-    // Tăng counter cho bài hát đầu tiên
     _incrementSongCounter(_song.id);
+    _addToListeningHistory(_song.id);
 
     _audioPlayerManager.setPlaylist(widget.songs, _selectedItemIndex);
+    // Cancel subscription cũ nếu có
+    _songChangedSubscription?.cancel();
 
-    _audioPlayerManager.onSongChanged = (song) {
-      setState(() {
-        _song = song;
-        _selectedItemIndex = widget.songs.indexOf(song);
-        _checkFavoriteStatus();
-        _incrementSongCounter(song.id);
+    // THAY ĐỔI: Lắng nghe stream thay vì set callback
+    _songChangedSubscription = _audioPlayerManager.songChangedStream.listen((song) {
+      if (mounted) {
+        setState(() {
+          _song = song;
+          _selectedItemIndex = widget.songs.indexOf(song);
+          _checkFavoriteStatus();
+          _incrementSongCounter(song.id);
+          _addToListeningHistory(song.id);
 
-        _stopRotationAnimation();
-        _resetRotationAnimation();
-      });
-    };
+          _stopRotationAnimation();
+          _resetRotationAnimation();
+        });
+      }
+    });
   }
 
-  // Tăng counter cho bài hát
+  Future<void> _addToListeningHistory(String songId) async {
+    if (_lastHistorySongId == songId) return;
+    _lastHistorySongId = songId;
+
+    try {
+      await _listeningHistoryRepository.addToHistory(songId);
+    } catch (e) {
+      print('Error adding to listening history: $e');
+    }
+  }
+
   Future<void> _incrementSongCounter(String songId) async {
-    // Chỉ tăng counter nếu bài hát chưa được đếm
     if (_countedSongId == songId) return;
 
     _countedSongId = songId;
     await _repository.incrementCounter(songId);
   }
 
-  // Kiểm tra xem bài hát có được yêu thích không
   Future<void> _checkFavoriteStatus() async {
     final isFav = await _favoriteRepository.isFavorite(_song.id);
     if (mounted) {
@@ -116,7 +155,6 @@ class _NowPlayingPageState extends State<NowPlayingPage>
     }
   }
 
-  // Toggle favorite khi bấm nút tim
   Future<void> _toggleFavorite() async {
     if (_isLoadingFavorite) return;
 
@@ -132,12 +170,13 @@ class _NowPlayingPageState extends State<NowPlayingPage>
         _isLoadingFavorite = false;
       });
 
-      // Hiển thị thông báo
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
+            backgroundColor: const Color(0xFF2A2139),
             content: Text(
               _isFavorite ? 'Đã thêm vào yêu thích' : 'Đã xóa khỏi yêu thích',
+              style: const TextStyle(color: Colors.white),
             ),
             duration: const Duration(seconds: 1),
           ),
@@ -151,7 +190,11 @@ class _NowPlayingPageState extends State<NowPlayingPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Có lỗi xảy ra, vui lòng thử lại'),
+            backgroundColor: Color(0xFF2A2139),
+            content: Text(
+              'Có lỗi xảy ra, vui lòng thử lại',
+              style: TextStyle(color: Colors.white),
+            ),
             duration: Duration(seconds: 2),
           ),
         );
@@ -166,21 +209,31 @@ class _NowPlayingPageState extends State<NowPlayingPage>
     final radius = (screenWidth - delta) / 2;
 
     return CupertinoPageScaffold(
+      backgroundColor: const Color(0xFF170F23),
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('Now Playing'),
+        backgroundColor: const Color(0xFF170F23),
+        middle: const Text(
+          'Now Playing',
+          style: TextStyle(color: Colors.white),
+        ),
         trailing: IconButton(
           onPressed: () {},
-          icon: const Icon(Icons.more_horiz),
+          icon: const Icon(Icons.more_horiz, color: Colors.white),
         ),
+        border: null,
       ),
       child: Scaffold(
+        backgroundColor: const Color(0xFF170F23),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(_song.album),
+              Text(
+                _song.album,
+                style: const TextStyle(color: Colors.white60, fontSize: 14),
+              ),
               const SizedBox(height: 16),
-              const Text('_ ___ _'),
+              const Text('_ ___ _', style: TextStyle(color: Colors.white30)),
               const SizedBox(height: 48),
               RotationTransition(
                 turns: Tween(
@@ -213,29 +266,26 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                     children: [
                       IconButton(
                         onPressed: () {},
-                        icon: Icon(Icons.share_outlined),
-                        color: Theme.of(context).colorScheme.primary,
+                        icon: const Icon(Icons.share_outlined),
+                        color: Colors.white,
                       ),
                       Column(
                         children: [
                           Text(
                             _song.title,
-                            style: Theme.of(context).textTheme.bodyMedium!
-                                .copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).textTheme.bodyMedium!.color,
-                                ),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             _song.artist,
-                            style: Theme.of(context).textTheme.bodyMedium!
-                                .copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).textTheme.bodyMedium!.color,
-                                ),
+                            style: const TextStyle(
+                              color: Colors.white60,
+                              fontSize: 14,
+                            ),
                           ),
                         ],
                       ),
@@ -244,20 +294,21 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                         onPressed: _isLoadingFavorite ? null : _toggleFavorite,
                         icon: _isLoadingFavorite
                             ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF9B4DE0),
+                          ),
+                        )
                             : Icon(
-                                _isFavorite
-                                    ? Icons.favorite
-                                    : Icons.favorite_outline,
-                              ),
+                          _isFavorite
+                              ? Icons.favorite
+                              : Icons.favorite_outline,
+                        ),
                         color: _isFavorite
-                            ? Colors.red
-                            : Theme.of(context).colorScheme.primary,
+                            ? const Color(0xFF9B4DE0)
+                            : Colors.white,
                       ),
                     ],
                   ),
@@ -287,6 +338,8 @@ class _NowPlayingPageState extends State<NowPlayingPage>
 
   @override
   void dispose() {
+    // THÊM: Hủy subscription
+    _songChangedSubscription?.cancel();
     _imageAnimationController.dispose();
     super.dispose();
   }
@@ -305,14 +358,14 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           MediaButtonControl(
             function: _setPrevSong,
             icon: Icons.skip_previous,
-            color: Colors.deepPurple,
+            color: Colors.white,
             size: 36,
           ),
           _playButton(),
           MediaButtonControl(
             function: _setNextSong,
             icon: Icons.skip_next,
-            color: Colors.deepPurple,
+            color: Colors.white,
             size: 36,
           ),
           MediaButtonControl(
@@ -341,12 +394,16 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           onSeek: _audioPlayerManager.player.seek,
           barHeight: 5.0,
           barCapShape: BarCapShape.round,
-          baseBarColor: Colors.grey.withOpacity(0.3),
-          progressBarColor: Colors.purple,
-          bufferedBarColor: Colors.grey.withOpacity(0.3),
-          thumbColor: Colors.deepPurple,
-          thumbGlowColor: Colors.green.withOpacity(0.3),
+          baseBarColor: const Color(0xFF3D3153),
+          progressBarColor: const Color(0xFF9B4DE0),
+          bufferedBarColor: const Color(0xFF3D3153),
+          thumbColor: const Color(0xFF9B4DE0),
+          thumbGlowColor: const Color(0xFF9B4DE0).withOpacity(0.3),
           thumbRadius: 10.0,
+          timeLabelTextStyle: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+          ),
         );
       },
     );
@@ -366,7 +423,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
             margin: const EdgeInsets.all(8),
             width: 48,
             height: 48,
-            child: const CircularProgressIndicator(),
+            child: const CircularProgressIndicator(color: Color(0xFF9B4DE0)),
           );
         } else if (playing != true) {
           return MediaButtonControl(
@@ -378,7 +435,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
               _imageAnimationController.repeat();
             },
             icon: Icons.play_arrow,
-            color: null,
+            color: Colors.white,
             size: 48,
           );
         } else if (processingState != ProcessingState.completed) {
@@ -391,11 +448,10 @@ class _NowPlayingPageState extends State<NowPlayingPage>
               _pauseRotationAnimation();
             },
             icon: Icons.pause,
-            color: null,
+            color: Colors.white,
             size: 48,
           );
         } else {
-          //Đang phát
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _playRotationAnimation();
           });
@@ -405,7 +461,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
               _pauseRotationAnimation();
             },
             icon: Icons.replay,
-            color: null,
+            color: Colors.white,
             size: 48,
           );
         }
@@ -421,7 +477,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   }
 
   Color? _getShuffleColor() {
-    return _isShuffle ? Colors.deepPurple : Colors.grey;
+    return _isShuffle ? const Color(0xFF9B4DE0) : Colors.white60;
   }
 
   void _setNextSong() {
@@ -450,8 +506,11 @@ class _NowPlayingPageState extends State<NowPlayingPage>
       _song = widget.songs[_selectedItemIndex];
       _audioPlayerManager.updateSongUrl(_song.source);
 
+      _audioPlayerManager.notifySongChanged(_song);
+
       _incrementSongCounter(_song.id);
       _checkFavoriteStatus();
+      _addToListeningHistory(_song.id);
 
       _stopRotationAnimation();
       _resetRotationAnimation();
@@ -483,8 +542,11 @@ class _NowPlayingPageState extends State<NowPlayingPage>
       _song = widget.songs[_selectedItemIndex];
       _audioPlayerManager.updateSongUrl(_song.source);
 
+      _audioPlayerManager.notifySongChanged(_song);
+
       _incrementSongCounter(_song.id);
       _checkFavoriteStatus();
+      _addToListeningHistory(_song.id);
 
       _stopRotationAnimation();
       _resetRotationAnimation();
@@ -513,7 +575,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   }
 
   Color? _getRepeatingIconColor() {
-    return _loopMode == LoopMode.off ? Colors.grey : Colors.deepPurple;
+    return _loopMode == LoopMode.off ? Colors.white60 : const Color(0xFF9B4DE0);
   }
 
   void _playRotationAnimation() {
@@ -561,7 +623,7 @@ class _MediaButtonControlState extends State<MediaButtonControl> {
       onPressed: widget.function,
       icon: Icon(widget.icon),
       iconSize: widget.size,
-      color: widget.color ?? Theme.of(context).colorScheme.primary,
+      color: widget.color ?? Colors.white,
     );
   }
 }

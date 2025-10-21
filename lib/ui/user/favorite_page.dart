@@ -36,14 +36,23 @@ class _FavoriteTabPageState extends State<FavoriteTabPage> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('Favorite Songs'),
-        trailing: IconButton(
-          onPressed: null, // Có thể thêm chức năng cho nút này nếu cần
-          icon: Icon(Icons.more_horiz),
+      backgroundColor: const Color(0xFF170F23),
+      navigationBar: CupertinoNavigationBar(
+        backgroundColor: const Color(0xFF170F23),
+        middle: const Text(
+          'Favorite Songs',
+          style: TextStyle(color: Colors.white),
         ),
+        trailing: IconButton(
+          onPressed: null,
+          icon: const Icon(Icons.more_horiz, color: Colors.white70),
+        ),
+        border: null,
       ),
-      child: Scaffold(body: getBody()),
+      child: Scaffold(
+        backgroundColor: const Color(0xFF170F23),
+        body: getBody(),
+      ),
     );
   }
 
@@ -60,10 +69,7 @@ class _FavoriteTabPageState extends State<FavoriteTabPage> {
       return const Center(
         child: Text(
           'Chưa có bài hát yêu thích',
-          style: TextStyle(
-            fontSize: 18,
-            color: Colors.grey,
-          ),
+          style: TextStyle(fontSize: 18, color: Colors.white60),
         ),
       );
     } else {
@@ -72,7 +78,9 @@ class _FavoriteTabPageState extends State<FavoriteTabPage> {
   }
 
   Widget getProgressBar() {
-    return const Center(child: CircularProgressIndicator());
+    return const Center(
+      child: CircularProgressIndicator(color: Color(0xFF9B4DE0)),
+    );
   }
 
   ListView getListView() {
@@ -82,8 +90,8 @@ class _FavoriteTabPageState extends State<FavoriteTabPage> {
       },
       separatorBuilder: (context, index) {
         return const Divider(
-          color: Colors.grey,
-          thickness: 1,
+          color: Color(0xFF3D3153),
+          thickness: 0.5,
           indent: 24,
           endIndent: 24,
         );
@@ -116,7 +124,6 @@ class _FavoriteTabPageState extends State<FavoriteTabPage> {
         },
       ),
     ).then((_) {
-      // Reload lại danh sách khi quay về (có thể đã thay đổi favorite)
       _viewModel.loadFavoriteSongs();
     });
   }
@@ -124,13 +131,16 @@ class _FavoriteTabPageState extends State<FavoriteTabPage> {
   void removeFavorite(String songId) async {
     final success = await _viewModel.toggleFavorite(songId);
     if (success) {
-      // Reload lại danh sách
       _viewModel.loadFavoriteSongs();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Đã xóa khỏi yêu thích'),
+            backgroundColor: Color(0xFF2A2139),
+            content: Text(
+              'Đã xóa khỏi yêu thích',
+              style: TextStyle(color: Colors.white),
+            ),
             duration: Duration(seconds: 1),
           ),
         );
@@ -160,14 +170,22 @@ class _FavoriteSongItem extends StatelessWidget {
           },
         ),
       ),
-      title: Text(song.title),
-      subtitle: Text(song.artist),
+      title: Text(
+        song.title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(
+        song.artist,
+        style: const TextStyle(color: Colors.white60),
+      ),
       trailing: IconButton(
         onPressed: () {
-          // Xóa khỏi favorite
           parent.removeFavorite(song.id);
         },
-        icon: const Icon(Icons.favorite, color: Colors.red),
+        icon: const Icon(Icons.favorite, color: Color(0xFF9B4DE0)),
       ),
       onTap: () {
         parent.navigate(song);

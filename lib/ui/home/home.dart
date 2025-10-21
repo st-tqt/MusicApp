@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:music_app/ui/discovery/discovery.dart';
 import 'package:music_app/ui/home/viewmodel.dart';
 import 'package:music_app/ui/now_playing/audio_player_manager.dart';
@@ -7,6 +10,7 @@ import 'package:music_app/ui/settings/settings.dart';
 import 'package:music_app/ui/user/user.dart';
 
 import '../../data/model/song.dart';
+import '../../data/repository/listening_history_repository.dart';
 import '../now_playing/mini_player.dart';
 import '../now_playing/playing.dart';
 
@@ -18,7 +22,25 @@ class MusicApp extends StatelessWidget {
     return MaterialApp(
       title: 'MusicApp',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF170F23),
+        colorScheme: ColorScheme.dark(
+          primary: const Color(0xFF9B4DE0),
+          secondary: const Color(0xFF9B4DE0),
+          surface: const Color(0xFF170F23),
+          background: const Color(0xFF170F23),
+          onPrimary: Colors.white,
+          onSecondary: Colors.white,
+          onSurface: Colors.white,
+          onBackground: Colors.white,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF170F23),
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        cardColor: const Color(0xFF2A2139),
+        dividerColor: const Color(0xFF3D3153),
         useMaterial3: true,
       ),
       home: const MusicHomePage(),
@@ -45,17 +67,27 @@ class _MusicHomePageState extends State<MusicHomePage> {
   final _audioManager = AudioPlayerManager();
   Song? _currentSong;
   List<Song> _allSongs = [];
+  StreamSubscription<Song>? _songChangedSubscription;
+  final _historyRepository = DefaultListeningHistoryRepository();
 
   @override
   void initState() {
     super.initState();
 
-    // Lắng nghe thay đổi bài hát
-    _audioManager.onSongChanged = (song) {
+    // Đăng ký lắng nghe stream
+    _songChangedSubscription = _audioManager.songChangedStream.listen((song) {
+      _historyRepository.addToHistory(song.id);
       setState(() {
         _currentSong = song;
       });
-    };
+    });
+  }
+
+  @override
+  void dispose() {
+    // Hủy subscription
+    _songChangedSubscription?.cancel();
+    super.dispose();
   }
 
   void updateCurrentSong(Song song, List<Song> songs) {
@@ -67,76 +99,95 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(middle: Text('Music App')),
-      child: Stack(
-        children: [
-          // Tab chính
-          CupertinoTabScaffold(
-            tabBar: CupertinoTabBar(
-              backgroundColor: Theme.of(context).colorScheme.onInverseSurface,
-              items: const [
-                BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.album),
-                  label: 'Discovery',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.person),
-                  label: 'Account',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.settings),
-                  label: 'Settings',
-                ),
-              ],
-            ),
-            tabBuilder: (BuildContext context, int index) {
-              // Truyền callback xuống HomeTab
-              if (index == 0) {
-                return HomeTab(
-                  onSongPlay: (song, songs) {
-                    updateCurrentSong(song, songs);
-                  },
-                );
-              }
-              return _tabs[index];
-            },
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: CupertinoPageScaffold(
+        backgroundColor: const Color(0xFF170F23),
+        navigationBar: CupertinoNavigationBar(
+          backgroundColor: const Color(0xFF170F23),
+          middle: const Text(
+            'Music App',
+            style: TextStyle(color: Colors.white),
           ),
+          border: null,
+        ),
+        child: Stack(
+          children: [
+            CupertinoTabScaffold(
+              backgroundColor: const Color(0xFF170F23),
+              tabBar: CupertinoTabBar(
+                backgroundColor: const Color(0xFF170F23),
+                activeColor: const Color(0xFF9B4DE0),
+                inactiveColor: Colors.white60,
+                border: const Border(
+                  top: BorderSide(color: Color(0xFF3D3153), width: 0.5),
+                ),
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.home),
+                    label: 'Home',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.album),
+                    label: 'Discovery',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.person),
+                    label: 'Account',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.settings),
+                    label: 'Settings',
+                  ),
+                ],
+              ),
+              tabBuilder: (BuildContext context, int index) {
+                if (index == 0) {
+                  return HomeTab(
+                    onSongPlay: (song, songs) {
+                      updateCurrentSong(song, songs);
+                    },
+                  );
+                }
+                return _tabs[index];
+              },
+            ),
 
-          // MINI PLAYER
-          if (_currentSong != null)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: kBottomNavigationBarHeight + 11,
-              // tự động lấy chiều cao tab bar (~50)
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                // thêm tí khoảng cách
-                child: MiniPlayer(
-                  currentSong: _currentSong!,
-                  allSongs: _allSongs,
-                  onSongChanged: (song) {
-                    setState(() {
-                      _currentSong = song;
-                    });
-                  },
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      CupertinoPageRoute(
-                        builder: (context) => NowPlaying(
-                          playingSong: _currentSong!,
-                          songs: _allSongs,
+            if (_currentSong != null)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: kBottomNavigationBarHeight + 11,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: MiniPlayer(
+                    currentSong: _currentSong!,
+                    allSongs: _allSongs,
+                    onSongChanged: (song) {
+                      setState(() {
+                        _currentSong = song;
+                      });
+                    },
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) => NowPlaying(
+                            playingSong: _currentSong!,
+                            songs: _allSongs,
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -172,11 +223,24 @@ class _HomeTabPageState extends State<HomeTabPage> {
     _viewModel.loadSongs();
     obderveData();
     super.initState();
+
+    // Set status bar màu tối
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Color(0xFF170F23),
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Color(0xFF170F23),
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: getBody());
+    return Scaffold(
+      backgroundColor: const Color(0xFF170F23),
+      body: SafeArea(child: getBody()),
+    );
   }
 
   @override
@@ -195,7 +259,9 @@ class _HomeTabPageState extends State<HomeTabPage> {
   }
 
   Widget getProgressBar() {
-    return const Center(child: CircularProgressIndicator());
+    return const Center(
+      child: CircularProgressIndicator(color: Color(0xFF9B4DE0)),
+    );
   }
 
   ListView getListView() {
@@ -205,8 +271,8 @@ class _HomeTabPageState extends State<HomeTabPage> {
       },
       separatorBuilder: (context, index) {
         return const Divider(
-          color: Colors.grey,
-          thickness: 1,
+          color: Color(0xFF3D3153),
+          thickness: 0.5,
           indent: 24,
           endIndent: 24,
         );
@@ -231,19 +297,27 @@ class _HomeTabPageState extends State<HomeTabPage> {
   void showBottomSheet() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: const Color(0xFF2A2139),
       builder: (context) {
         return ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
           child: Container(
             height: 400,
-            color: Colors.grey,
+            color: const Color(0xFF2A2139),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  const Text('Modal Bottom Sheet'),
+                  const Text(
+                    'Modal Bottom Sheet',
+                    style: TextStyle(color: Colors.white),
+                  ),
                   ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF9B4DE0),
+                      foregroundColor: Colors.white,
+                    ),
                     onPressed: () => Navigator.pop(context),
                     child: const Text('Close Bottom Sheet'),
                   ),
@@ -257,7 +331,6 @@ class _HomeTabPageState extends State<HomeTabPage> {
   }
 
   void navigate(Song song) {
-    // GỌI CALLBACK ĐỂ CẬP NHẬT MINI PLAYER
     widget.onSongPlay?.call(song, songs);
 
     Navigator.push(
@@ -292,13 +365,22 @@ class _songItemSection extends StatelessWidget {
           },
         ),
       ),
-      title: Text(song.title),
-      subtitle: Text(song.artist),
+      title: Text(
+        song.title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(
+        song.artist,
+        style: const TextStyle(color: Colors.white60),
+      ),
       trailing: IconButton(
         onPressed: () {
           parent.showBottomSheet();
         },
-        icon: const Icon(Icons.more_horiz),
+        icon: const Icon(Icons.more_horiz, color: Colors.white70),
         onLongPress: () {
           parent.showBottomSheet();
         },

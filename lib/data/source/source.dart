@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../model/song.dart';
@@ -25,7 +26,6 @@ class RemoteDataSource implements DataSource {
   @override
   Future<bool> incrementCounter(String songId) async {
     try {
-      // Lấy counter hiện tại
       final response = await supabase
           .from('songs')
           .select('counter')
@@ -34,7 +34,6 @@ class RemoteDataSource implements DataSource {
 
       final currentCounter = response['counter'] as int? ?? 0;
 
-      // Cập nhật counter tăng lên 1
       await supabase
           .from('songs')
           .update({'counter': currentCounter + 1})
@@ -44,6 +43,27 @@ class RemoteDataSource implements DataSource {
     } catch (e) {
       print('Error incrementing counter: $e');
       return false;
+    }
+  }
+
+  Future<List<Song>?> loadRandomSongs(int limit) async {
+    try {
+      // Lấy tất cả bài hát
+      final response = await supabase.from('songs').select();
+      if (response.isEmpty) {
+        return null;
+      }
+
+      List<Song> allSongs = (response as List)
+          .map((song) => Song.fromMap(song as Map<String, dynamic>))
+          .toList();
+
+      // Shuffle và lấy số lượng bài hát theo limit
+      allSongs.shuffle(Random());
+      return allSongs.take(limit).toList();
+    } catch (e) {
+      print('Error loading random songs: $e');
+      return null;
     }
   }
 }

@@ -10,6 +10,7 @@ import '../../data/model/song.dart';
 import '../../data/repository/repository.dart';
 import '../../data/repository/favorite_repository.dart';
 import '../../data/repository/listening_history_repository.dart';
+import '../playlist/add_to_playlist_dialog.dart';
 import 'audio_player_manager.dart';
 
 class NowPlaying extends StatelessWidget {
@@ -217,7 +218,29 @@ class _NowPlayingPageState extends State<NowPlayingPage>
           style: TextStyle(color: Colors.white),
         ),
         trailing: IconButton(
-          onPressed: () {},
+          onPressed: () {
+            showModalBottomSheet(
+                context: context,
+                backgroundColor: const Color(0xFF2A2139),
+                builder: (context) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      leading: Icon(Icons.playlist_add, color: Colors.white,),
+                      title: Text(
+                        'Add to Playlist',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        showAddToPlaylistDialog(context, _song);
+                      },
+                    ),
+                    // ... các option khác
+                  ],
+                ),
+            );
+          },
           icon: const Icon(Icons.more_horiz, color: Colors.white),
         ),
         border: null,

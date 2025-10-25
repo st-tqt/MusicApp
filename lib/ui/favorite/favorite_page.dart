@@ -4,6 +4,8 @@ import '../../data/model/song.dart';
 import '../now_playing/playing.dart';
 import 'favorite_viewmodel.dart';
 
+export 'favorite_detail_page.dart';
+
 class FavoriteTab extends StatelessWidget {
   const FavoriteTab({super.key});
 

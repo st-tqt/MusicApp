@@ -1,11 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
+import 'package:music_app/ui/playlist/playlist_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/model/user.dart';
 import '../home/viewmodel.dart';
 import '../now_playing/audio_player_manager.dart';
-import 'favorite_page.dart';
+import '../favorite/favorite_page.dart';
 
 class AccountTab extends StatelessWidget {
   AccountTab({super.key});
@@ -138,7 +139,7 @@ class _AccountPageState extends State<AccountPage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const FavoriteTab(),
+                        builder: (context) => const PlaylistPage(),
                       ),
                     );
                   },

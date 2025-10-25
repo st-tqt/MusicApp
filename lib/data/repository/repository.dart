@@ -6,6 +6,7 @@ import '../model/song.dart';
 abstract interface class Repository {
   Future<List<Song>?> loadData();
   Future<bool> incrementCounter(String songId);
+  Future<List<Song>?> loadRandomSongs(int limit);
 }
 
 class DefaultRepository implements Repository {
@@ -34,15 +35,17 @@ class DefaultRepository implements Repository {
 
   @override
   Future<List<Song>?> loadSongsByIds(List<String> songIds) async {
-    // Implementation tùy thuộc vào cách bạn lấy songs
-    // Ví dụ:
     final response = await Supabase.instance.client
         .from('songs')
         .select()
         .inFilter('id', songIds);
 
     final List<dynamic> data = response as List<dynamic>;
-    // Ánh xạ từng phần tử JSON thành đối tượng Song
     return data.map((item) => Song.fromMap(item as Map<String, dynamic>)).toList();
+  }
+
+  @override
+  Future<List<Song>?> loadRandomSongs(int limit) async {
+    return await _remoteDataSource.loadRandomSongs(limit);
   }
 }

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:music_app/ui/discovery/discovery.dart';
 import 'package:music_app/ui/home/viewmodel.dart';
 import 'package:music_app/ui/now_playing/audio_player_manager.dart';
 import 'package:music_app/ui/settings/settings.dart';
@@ -13,6 +12,8 @@ import '../../data/model/song.dart';
 import '../../data/repository/listening_history_repository.dart';
 import '../now_playing/mini_player.dart';
 import '../now_playing/playing.dart';
+import '../playlist/add_to_playlist_dialog.dart';
+import '../playlist/playlist_page.dart';
 
 class MusicApp extends StatelessWidget {
   const MusicApp({super.key});
@@ -57,12 +58,9 @@ class MusicHomePage extends StatefulWidget {
 }
 
 class _MusicHomePageState extends State<MusicHomePage> {
-  final List<Widget> _tabs = [
-    const HomeTab(),
-    const DiscoveryTab(),
-    AccountTab(),
-    const SettingTab(),
-  ];
+  int _currentTabIndex = 0;
+
+  late List<Widget> _tabs;
 
   final _audioManager = AudioPlayerManager();
   Song? _currentSong;
@@ -74,7 +72,21 @@ class _MusicHomePageState extends State<MusicHomePage> {
   void initState() {
     super.initState();
 
-    // Đăng ký lắng nghe stream
+    _tabs = [
+      HomeTab(
+        onSongPlay: (song, songs) {
+          updateCurrentSong(song, songs);
+        },
+      ),
+      PlaylistTab(
+        onSongPlay: (song, songs) {
+          updateCurrentSong(song, songs);
+        },
+      ),
+      AccountTab(),
+      const SettingTab(),
+    ];
+
     _songChangedSubscription = _audioManager.songChangedStream.listen((song) {
       _historyRepository.addToHistory(song.id);
       setState(() {
@@ -85,7 +97,6 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
   @override
   void dispose() {
-    // Hủy subscription
     _songChangedSubscription?.cancel();
     super.dispose();
   }
@@ -99,97 +110,98 @@ class _MusicHomePageState extends State<MusicHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final tabBarHeight = kBottomNavigationBarHeight + bottomPadding;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
       ),
-      child: CupertinoPageScaffold(
-        backgroundColor: const Color(0xFF170F23),
-        navigationBar: CupertinoNavigationBar(
-          backgroundColor: const Color(0xFF170F23),
-          middle: const Text(
-            'Music App',
-            style: TextStyle(color: Colors.white),
-          ),
-          border: null,
-        ),
-        child: Stack(
-          children: [
-            CupertinoTabScaffold(
+      child: Stack(
+        children: [
+          CupertinoTabScaffold(
+            backgroundColor: const Color(0xFF170F23),
+            tabBar: CupertinoTabBar(
               backgroundColor: const Color(0xFF170F23),
-              tabBar: CupertinoTabBar(
-                backgroundColor: const Color(0xFF170F23),
-                activeColor: const Color(0xFF9B4DE0),
-                inactiveColor: Colors.white60,
-                border: const Border(
-                  top: BorderSide(color: Color(0xFF3D3153), width: 0.5),
-                ),
-                items: const [
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.home),
-                    label: 'Home',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.album),
-                    label: 'Discovery',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.person),
-                    label: 'Account',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.settings),
-                    label: 'Settings',
-                  ),
-                ],
+              activeColor: const Color(0xFF9B4DE0),
+              inactiveColor: Colors.white60,
+              border: const Border(
+                top: BorderSide(color: Color(0xFF3D3153), width: 0.5),
               ),
-              tabBuilder: (BuildContext context, int index) {
-                if (index == 0) {
-                  return HomeTab(
-                    onSongPlay: (song, songs) {
-                      updateCurrentSong(song, songs);
-                    },
-                  );
-                }
-                return _tabs[index];
+              currentIndex: _currentTabIndex,
+              onTap: (index) {
+                setState(() {
+                  _currentTabIndex = index;
+                });
               },
+              items: const [
+                BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.playlist_play),
+                  label: 'Playlists',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person),
+                  label: 'Account',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.settings),
+                  label: 'Settings',
+                ),
+              ],
             ),
-
-            if (_currentSong != null)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: kBottomNavigationBarHeight + 11,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: MiniPlayer(
-                    currentSong: _currentSong!,
-                    allSongs: _allSongs,
-                    onSongChanged: (song) {
-                      setState(() {
-                        _currentSong = song;
-                      });
-                    },
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        CupertinoPageRoute(
-                          builder: (context) => NowPlaying(
-                            playingSong: _currentSong!,
-                            songs: _allSongs,
-                          ),
+            tabBuilder: (BuildContext context, int index) {
+              return CupertinoTabView(
+                builder: (context) {
+                  return _tabs[index];
+                },
+              );
+            },
+          ),
+          if (_currentSong != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: tabBarHeight - 11,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: MiniPlayer(
+                  currentSong: _currentSong!,
+                  allSongs: _allSongs,
+                  onSongChanged: (song) {
+                    setState(() {
+                      _currentSong = song;
+                    });
+                  },
+                  onTap: () {
+                    Navigator.of(context, rootNavigator: true).push(
+                      CupertinoPageRoute(
+                        builder: (context) => NowPlaying(
+                          playingSong: _currentSong!,
+                          songs: _allSongs,
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
+  }
+}
+
+class PlaylistTab extends StatelessWidget {
+  final Function(Song, List<Song>)? onSongPlay;
+
+  const PlaylistTab({super.key, this.onSongPlay});
+
+  @override
+  Widget build(BuildContext context) {
+    return PlaylistPage(onSongPlay: onSongPlay);
   }
 }
 
@@ -215,16 +227,18 @@ class HomeTabPage extends StatefulWidget {
 
 class _HomeTabPageState extends State<HomeTabPage> {
   List<Song> songs = [];
+  List<Song> recommendedSongs = [];
   late MusicAppViewModel _viewModel;
+  bool isLoadingRecommended = true;
 
   @override
   void initState() {
     _viewModel = MusicAppViewModel();
     _viewModel.loadSongs();
-    obderveData();
+    _viewModel.loadRecommendedSongs();
+    observeData();
     super.initState();
 
-    // Set status bar màu tối
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Color(0xFF170F23),
@@ -239,13 +253,20 @@ class _HomeTabPageState extends State<HomeTabPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF170F23),
+      appBar: AppBar(
+        title: const Text('Music App', style: TextStyle(color: Colors.white)),
+        centerTitle: true,
+        backgroundColor: const Color(0xFF170F23),
+        elevation: 0,
+        automaticallyImplyLeading: false,
+      ),
       body: SafeArea(child: getBody()),
     );
   }
 
   @override
   void dispose() {
-    _viewModel.songStream.close();
+    _viewModel.dispose();
     super.dispose();
   }
 
@@ -254,8 +275,234 @@ class _HomeTabPageState extends State<HomeTabPage> {
     if (showLoading) {
       return getProgressBar();
     } else {
-      return getListView();
+      return SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildRecommendedSection(),
+            const SizedBox(height: 24),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Tất cả bài hát',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            getListView(),
+          ],
+        ),
+      );
     }
+  }
+
+  Widget _buildRecommendedSection() {
+    return Container(
+      color: const Color(0xFF170F23),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Gợi ý bài hát',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        if (recommendedSongs.isNotEmpty) {
+                          widget.onSongPlay?.call(
+                            recommendedSongs[0],
+                            recommendedSongs,
+                          );
+                          Navigator.of(context, rootNavigator: true).push(
+                            CupertinoPageRoute(
+                              builder: (context) => NowPlaying(
+                                songs: recommendedSongs,
+                                playingSong: recommendedSongs[0],
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF9B4DE0),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          children: const [
+                            Icon(
+                              Icons.play_arrow,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Phát tất cả',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: _reloadRecommendedSongs,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2A2139),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(
+                          Icons.refresh,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          isLoadingRecommended
+              ? const SizedBox(
+                  height: 200,
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFF9B4DE0)),
+                  ),
+                )
+              : SizedBox(
+                  height: 280,
+                  child: PageView.builder(
+                    padEnds: false,
+                    controller: PageController(viewportFraction: 0.92),
+                    itemCount: (recommendedSongs.length / 3).ceil(),
+                    itemBuilder: (context, pageIndex) {
+                      int startIndex = pageIndex * 3;
+                      int endIndex = (startIndex + 3).clamp(
+                        0,
+                        recommendedSongs.length,
+                      );
+                      List<Song> pageSongs = recommendedSongs.sublist(
+                        startIndex,
+                        endIndex,
+                      );
+
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Column(
+                          children: pageSongs
+                              .map((song) => _buildRecommendedListItem(song))
+                              .toList(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecommendedListItem(Song song) {
+    return InkWell(
+      onTap: () {
+        widget.onSongPlay?.call(song, recommendedSongs);
+        Navigator.of(context, rootNavigator: true).push(
+          CupertinoPageRoute(
+            builder: (context) =>
+                NowPlaying(songs: recommendedSongs, playingSong: song),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: FadeInImage.assetNetwork(
+                placeholder: 'assets/itunes1.png',
+                image: song.image,
+                width: 56,
+                height: 56,
+                fit: BoxFit.cover,
+                imageErrorBuilder: (context, error, stackTrace) {
+                  return Image.asset(
+                    'assets/itunes1.png',
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    song.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    song.artist,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white60, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.more_vert, color: Colors.white70),
+              onPressed: () {
+                showBottomSheet(song);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _reloadRecommendedSongs() {
+    setState(() {
+      isLoadingRecommended = true;
+    });
+    _viewModel.loadRecommendedSongs();
   }
 
   Widget getProgressBar() {
@@ -264,7 +511,7 @@ class _HomeTabPageState extends State<HomeTabPage> {
     );
   }
 
-  ListView getListView() {
+  Widget getListView() {
     return ListView.separated(
       itemBuilder: (context, position) {
         return getRow(position);
@@ -279,6 +526,7 @@ class _HomeTabPageState extends State<HomeTabPage> {
       },
       itemCount: songs.length,
       shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
     );
   }
 
@@ -286,15 +534,22 @@ class _HomeTabPageState extends State<HomeTabPage> {
     return _songItemSection(parent: this, song: songs[index]);
   }
 
-  void obderveData() {
+  void observeData() {
     _viewModel.songStream.stream.listen((songList) {
       setState(() {
         songs.addAll(songList);
       });
     });
+
+    _viewModel.recommendedStream.stream.listen((songList) {
+      setState(() {
+        recommendedSongs = songList;
+        isLoadingRecommended = false;
+      });
+    });
   }
 
-  void showBottomSheet() {
+  void showBottomSheet(Song song) {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF2A2139),
@@ -302,24 +557,23 @@ class _HomeTabPageState extends State<HomeTabPage> {
         return ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
           child: Container(
-            height: 400,
+            height: 200,
             color: const Color(0xFF2A2139),
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  const Text(
-                    'Modal Bottom Sheet',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF9B4DE0),
-                      foregroundColor: Colors.white,
+                children: [
+                  ListTile(
+                    leading: Icon(Icons.playlist_add, color: Colors.white),
+                    title: Text(
+                      'Add to Playlist',
+                      style: TextStyle(color: Colors.white),
                     ),
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Close Bottom Sheet'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      showAddToPlaylistDialog(context, song);
+                    },
                   ),
                 ],
               ),
@@ -333,8 +587,7 @@ class _HomeTabPageState extends State<HomeTabPage> {
   void navigate(Song song) {
     widget.onSongPlay?.call(song, songs);
 
-    Navigator.push(
-      context,
+    Navigator.of(context, rootNavigator: true).push(
       CupertinoPageRoute(
         builder: (context) {
           return NowPlaying(songs: songs, playingSong: song);
@@ -378,11 +631,11 @@ class _songItemSection extends StatelessWidget {
       ),
       trailing: IconButton(
         onPressed: () {
-          parent.showBottomSheet();
+          parent.showBottomSheet(song);
         },
         icon: const Icon(Icons.more_horiz, color: Colors.white70),
         onLongPress: () {
-          parent.showBottomSheet();
+          parent.showBottomSheet(song);
         },
       ),
       onTap: () {

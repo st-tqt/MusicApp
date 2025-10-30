@@ -66,6 +66,30 @@ class RemoteDataSource implements DataSource {
       return null;
     }
   }
+
+  Future<List<Song>?> loadTrendingSongs(int limit) async {
+    try {
+      // Lấy bài hát sắp xếp theo counter giảm dần
+      final response = await supabase
+          .from('songs')
+          .select()
+          .order('counter', ascending: false)
+          .limit(limit);
+
+      if (response.isEmpty) {
+        return null;
+      }
+
+      List<Song> trendingSongs = (response as List)
+          .map((song) => Song.fromMap(song as Map<String, dynamic>))
+          .toList();
+
+      return trendingSongs;
+    } catch (e) {
+      print('Error loading trending songs: $e');
+      return null;
+    }
+  }
 }
 
 class LocalDataSource implements DataSource {

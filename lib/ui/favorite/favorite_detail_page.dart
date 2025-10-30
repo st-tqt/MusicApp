@@ -41,6 +41,72 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
     });
   }
 
+  void _playAllSongs() {
+    if (_songs.isNotEmpty) {
+      widget.onSongPlay?.call(_songs.first, _songs);
+      Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(
+          builder: (context) =>
+              NowPlaying(playingSong: _songs.first, songs: _songs),
+        ),
+      );
+    }
+  }
+
+  Future<void> _removeSongFromFavorites(Song song) async {
+    final success = await _viewModel.toggleFavorite(song.id);
+
+    if (success && mounted) {
+      setState(() {
+        _songs.removeWhere((s) => s.id == song.id);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Removed "${song.title}" from favorites',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFFE91E63),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Failed to remove song'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _viewModel.songStream.close();
@@ -49,29 +115,31 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Lấy ảnh của bài hát đầu tiên
     String? firstSongImage = _songs.isNotEmpty ? _songs.first.image : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF170F23),
+      backgroundColor: const Color(0xFF0A0118),
       body: CustomScrollView(
         slivers: [
+          // Header với ảnh và icon trái tim
           SliverAppBar(
-            expandedHeight: 300,
+            expandedHeight: 280,
             pinned: true,
-            backgroundColor: const Color(0xFF170F23),
+            backgroundColor: const Color(0xFF0A0118),
             iconTheme: const IconThemeData(color: Colors.white),
             flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
               title: const Text(
                 'Favorite Songs',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
+                  fontSize: 18,
                   shadows: [
                     Shadow(
-                      offset: Offset(0, 1),
+                      offset: Offset(0, 2),
                       blurRadius: 8.0,
-                      color: Colors.black54,
+                      color: Colors.black87,
                     ),
                   ],
                 ),
@@ -79,77 +147,74 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Background gradient with favorite theme
+                  // Gradient background
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          const Color(0xFF9B4DE0).withOpacity(0.8),
-                          const Color(0xFFE91E63).withOpacity(0.6),
-                          const Color(0xFF170F23),
+                          const Color(0xFFE91E63).withOpacity(0.5),
+                          const Color(0xFF9B4DE0).withOpacity(0.4),
+                          const Color(0xFF0A0118),
                         ],
                       ),
                     ),
                   ),
-                  // Image overlay
+
+                  // Blurred background image
                   if (firstSongImage != null && firstSongImage.isNotEmpty)
                     Opacity(
-                      opacity: 0.25,
+                      opacity: 0.15,
                       child: Image.network(
                         firstSongImage,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container();
-                        },
+                        errorBuilder: (context, error, stackTrace) =>
+                            Container(),
                       ),
                     ),
-                  // Centered heart icon
+
+                  // Cover image với icon trái tim overlay
                   Center(
                     child: Container(
                       width: 160,
                       height: 160,
-                      margin: const EdgeInsets.only(top: 40),
+                      margin: const EdgeInsets.only(top: 30),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF9B4DE0),
-                            const Color(0xFFE91E63),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF9B4DE0).withOpacity(0.5),
+                            color: const Color(0xFFE91E63).withOpacity(0.5),
                             blurRadius: 30,
                             offset: const Offset(0, 10),
                           ),
                         ],
                       ),
-                      child: firstSongImage != null && firstSongImage.isNotEmpty
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Stack(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child:
+                            firstSongImage != null && firstSongImage.isNotEmpty
+                            ? Stack(
                                 fit: StackFit.expand,
                                 children: [
                                   Image.network(
                                     firstSongImage,
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
-                                      return const Icon(
-                                        Icons.favorite,
-                                        size: 80,
-                                        color: Colors.white,
-                                      );
+                                      return _buildPlaceholderCover();
                                     },
                                   ),
-                                  // Overlay heart icon
+                                  // Overlay với icon trái tim
                                   Container(
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.3),
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Colors.black.withOpacity(0.3),
+                                          Colors.transparent,
+                                        ],
+                                      ),
                                     ),
                                     child: const Center(
                                       child: Icon(
@@ -160,250 +225,380 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
                                     ),
                                   ),
                                 ],
-                              ),
-                            )
-                          : const Center(
-                              child: Icon(
-                                Icons.favorite,
-                                size: 80,
-                                color: Colors.white,
-                              ),
-                            ),
+                              )
+                            : _buildPlaceholderCover(),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
+
+          // Thông tin và nút play
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Your favorite songs collection',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  // Badges
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.lock,
-                        size: 16,
-                        color: Colors.white.withOpacity(0.5),
+                      _buildInfoBadge(
+                        icon: Icons.lock_rounded,
+                        label: "System Playlist",
+                        color: const Color(0xFF9B4DE0),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        "System Playlist",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Icon(
-                        Icons.music_note,
-                        size: 16,
-                        color: Colors.white.withOpacity(0.5),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        "${_songs.length} songs",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 13,
-                        ),
+                      const SizedBox(width: 12),
+                      _buildInfoBadge(
+                        icon: Icons.music_note_rounded,
+                        label: "${_songs.length} songs",
+                        color: const Color(0xFFE91E63),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  const Divider(color: Color(0xFF3D3153)),
+
+                  const SizedBox(height: 20),
+
+                  // Play All Button
+                  if (_songs.isNotEmpty)
+                    InkWell(
+                      onTap: _playAllSongs,
+                      borderRadius: BorderRadius.circular(30),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFE91E63), Color(0xFF9B4DE0)],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFE91E63).withOpacity(0.4),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(
+                              Icons.play_arrow_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Play All',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
           ),
+
+          // Danh sách bài hát
           _isLoading
               ? const SliverFillRemaining(
                   child: Center(
-                    child: CircularProgressIndicator(color: Color(0xFF9B4DE0)),
-                  ),
-                )
-              : _songs.isEmpty
-              ? SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.favorite_border,
-                          size: 80,
-                          color: Colors.white.withOpacity(0.3),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "No favorite songs yet",
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.white.withOpacity(0.6),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "Tap the heart icon to add songs",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white.withOpacity(0.4),
-                          ),
-                        ),
-                      ],
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFFE91E63),
+                      ),
                     ),
                   ),
                 )
-              : SliverList(
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final song = _songs[index];
-                    return _buildSongItem(song, index);
-                  }, childCount: _songs.length),
+              : _songs.isEmpty
+              ? SliverFillRemaining(child: _buildEmptyState())
+              : SliverPadding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final song = _songs[index];
+                      return _buildSongItem(song, index);
+                    }, childCount: _songs.length),
+                  ),
                 ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderCover() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFE91E63), Color(0xFF9B4DE0)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: const Center(
+        child: Icon(Icons.favorite, size: 80, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildInfoBadge({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color.withOpacity(0.9)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF1A0F2E).withOpacity(0.5),
+                  const Color(0xFF2D1B47).withOpacity(0.3),
+                ],
+              ),
+              border: Border.all(
+                color: const Color(0xFFE91E63).withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: Icon(
+              Icons.favorite_border_rounded,
+              size: 64,
+              color: Colors.white.withOpacity(0.4),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            "No favorite songs yet",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white.withOpacity(0.8),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Tap the heart icon to add songs",
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.5),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildSongItem(Song song, int index) {
-    return Dismissible(
-      key: Key(song.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        color: Colors.red,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.favorite_border, color: Colors.white),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A0F2E).withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF2D1B47).withOpacity(0.4),
+          width: 1,
+        ),
       ),
-      confirmDismiss: (direction) async {
-        return await _showRemoveFavoriteDialog(song);
-      },
-      onDismissed: (direction) async {
-        final success = await _viewModel.toggleFavorite(song.id);
-        if (success) {
-          _loadSongs();
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Removed from favorites'),
-                backgroundColor: Color(0xFF9B4DE0),
-                duration: Duration(seconds: 1),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            widget.onSongPlay?.call(song, _songs);
+            Navigator.of(context, rootNavigator: true).push(
+              MaterialPageRoute(
+                builder: (context) =>
+                    NowPlaying(playingSong: song, songs: _songs),
               ),
             );
-          }
-        }
-      },
-      child: ListTile(
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-          child: song.image.isNotEmpty
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    song.image,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: const Color(0xFF9B4DE0).withOpacity(0.2),
-                        child: const Icon(
-                          Icons.music_note,
-                          color: Color(0xFF9B4DE0),
-                        ),
-                      );
-                    },
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // Song Image
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFE91E63).withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                )
-              : Container(
-                  color: const Color(0xFF9B4DE0).withOpacity(0.2),
-                  child: const Icon(Icons.music_note, color: Color(0xFF9B4DE0)),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: song.image.isNotEmpty
+                        ? Image.network(
+                            song.image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildSongPlaceholder();
+                            },
+                          )
+                        : _buildSongPlaceholder(),
+                  ),
                 ),
-        ),
-        title: Text(
-          song.title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
+
+                const SizedBox(width: 12),
+
+                // Song Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        song.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              song.artist,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // Menu Button
+                PopupMenuButton<String>(
+                  icon: Icon(
+                    Icons.more_vert_rounded,
+                    color: Colors.white.withOpacity(0.6),
+                    size: 22,
+                  ),
+                  color: const Color(0xFF1A0F2E),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: const Color(0xFFE91E63).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                  splashRadius: 20,
+                  offset: const Offset(0, 40),
+                  onSelected: (value) {
+                    if (value == 'remove') {
+                      _removeSongFromFavorites(song);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'remove',
+                      height: 48,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.heart_broken_rounded,
+                            color: Colors.red.withOpacity(0.9),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Remove from favorites',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(
-          song.artist,
-          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 13),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _formatDuration(song.duration),
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
-                fontSize: 13,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.favorite, color: Color(0xFF9B4DE0), size: 20),
-          ],
-        ),
-        onTap: () {
-          widget.onSongPlay?.call(song, _songs);
-          Navigator.of(context, rootNavigator: true).push(
-            MaterialPageRoute(
-              builder: (context) =>
-                  NowPlaying(playingSong: song, songs: _songs),
-            ),
-          );
-        },
       ),
     );
   }
 
-  String _formatDuration(int seconds) {
-    final minutes = seconds ~/ 60;
-    final remainingSeconds = seconds % 60;
-    return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
-  }
-
-  Future<bool?> _showRemoveFavoriteDialog(Song song) async {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF2A2139),
-        title: const Text(
-          'Remove from Favorites',
-          style: TextStyle(color: Colors.white),
+  Widget _buildSongPlaceholder() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF1A0F2E), Color(0xFF2D1B47)],
         ),
-        content: Text(
-          'Remove "${song.title}" from your favorites?',
-          style: const TextStyle(color: Colors.white),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.music_note_rounded,
+          color: Color(0xFFE91E63),
+          size: 28,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white.withOpacity(0.6)),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Remove', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }

@@ -47,98 +47,232 @@ class _PlaylistPageState extends State<PlaylistPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF170F23),
-      appBar: AppBar(
-        title: const Text(
-          "My Playlists",
-          style: TextStyle(color: Colors.white),
-        ),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF170F23),
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.white, size: 28),
-            onPressed: () => _showCreatePlaylistDialog(),
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF9B4DE0)),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _playlists.length + 1, // +1 cho Favorite playlist
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  // Favorite playlist (mặc định)
-                  return _buildFavoritePlaylistCard();
-                }
-                final playlist = _playlists[index - 1];
-                return _buildPlaylistCard(playlist);
-              },
+      backgroundColor: const Color(0xFF0A0118),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            floating: true,
+            pinned: true,
+            backgroundColor: const Color(0xFF0A0118),
+            elevation: 0,
+            expandedHeight: 120,
+            flexibleSpace: FlexibleSpaceBar(
+              centerTitle: true,
+              title: ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [
+                    Color(0xFFFF6B9D),
+                    Color(0xFFBB6BD9),
+                    Color(0xFF00D9FF),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds),
+                child: const Text(
+                  'Playlists',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
-    );
-  }
-
-  Widget _buildFavoritePlaylistCard() {
-    return Card(
-      color: const Color(0xFF2A2139),
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        leading: Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF9B4DE0),
-                const Color(0xFF9B4DE0).withOpacity(0.6),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: const Icon(Icons.favorite, color: Colors.white, size: 32),
-        ),
-        title: const Text(
-          'Favorite Songs',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Row(
-            children: [
-              Icon(Icons.lock, size: 14, color: Colors.white.withOpacity(0.4)),
-              const SizedBox(width: 4),
-              Text(
-                "System Playlist",
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
-                  fontSize: 12,
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF6B9D), Color(0xFFBB6BD9)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF6B9D).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.add, color: Colors.white, size: 24),
+                  ),
+                  onPressed: () => _showCreatePlaylistDialog(),
                 ),
               ),
             ],
           ),
+          SliverToBoxAdapter(
+            child: _isLoading
+                ? const SizedBox(
+                    height: 200,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFFFF6B9D),
+                        ),
+                      ),
+                    ),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      _buildFavoritePlaylistCard(),
+                      if (_playlists.isNotEmpty) ...[
+                        const SizedBox(height: 32),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: ShaderMask(
+                            shaderCallback: (bounds) => const LinearGradient(
+                              colors: [Color(0xFFFF6B9D), Color(0xFFBB6BD9)],
+                            ).createShader(bounds),
+                            child: const Text(
+                              'Playlist của tôi',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _playlists.length,
+                        itemBuilder: (context, index) {
+                          final playlist = _playlists[index];
+                          return _buildPlaylistCard(playlist);
+                        },
+                      ),
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFavoritePlaylistCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1A0F2E), Color(0xFF2D1B47)],
         ),
-        onTap: () {
-          Navigator.push(
-            context,
-            CupertinoPageRoute(
-              builder: (context) =>
-                  FavoriteDetailPage(onSongPlay: widget.onSongPlay),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFFFF6B9D).withOpacity(0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF6B9D).withOpacity(0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            Navigator.push(
+              context,
+              CupertinoPageRoute(
+                builder: (context) =>
+                    FavoriteDetailPage(onSongPlay: widget.onSongPlay),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFF6B9D), Color(0xFFBB6BD9)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF6B9D).withOpacity(0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.favorite,
+                    color: Colors.white,
+                    size: 36,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Yêu thích',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.lock,
+                            size: 14,
+                            color: Colors.white.withOpacity(0.5),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Playlist hệ thống',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
@@ -148,139 +282,225 @@ class _PlaylistPageState extends State<PlaylistPage> {
       future: _viewModel.loadPlaylistSongs(playlist.id),
       builder: (context, snapshot) {
         String? firstSongImage;
-        if (snapshot.hasData &&
-            snapshot.data != null &&
-            snapshot.data!.isNotEmpty) {
-          firstSongImage = snapshot.data!.first.image;
+        int songCount = 0;
+
+        if (snapshot.hasData && snapshot.data != null) {
+          songCount = snapshot.data!.length;
+          if (snapshot.data!.isNotEmpty) {
+            firstSongImage = snapshot.data!.first.image;
+          }
         }
 
-        return Card(
-          color: const Color(0xFF2A2139),
+        return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF1A0F2E).withOpacity(0.6),
+                const Color(0xFF2D1B47).withOpacity(0.3),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFFBB6BD9).withOpacity(0.2),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(12),
-            leading: Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: const Color(0xFF9B4DE0).withOpacity(0.2),
-              ),
-              child: firstSongImage != null && firstSongImage.isNotEmpty
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        firstSongImage,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Icon(
-                            Icons.playlist_play,
-                            color: Color(0xFF9B4DE0),
-                            size: 32,
-                          );
-                        },
-                      ),
-                    )
-                  : const Icon(
-                      Icons.playlist_play,
-                      color: Color(0xFF9B4DE0),
-                      size: 32,
-                    ),
-            ),
-            title: Text(
-              playlist.name,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (playlist.description != null &&
-                    playlist.description!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      playlist.description!,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
-                        fontSize: 13,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  CupertinoPageRoute(
+                    builder: (context) => PlaylistDetailPage(
+                      playlist: playlist,
+                      onSongPlay: widget.onSongPlay,
                     ),
                   ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Row(
-                    children: [
-                      Icon(
-                        playlist.isPublic ? Icons.public : Icons.lock,
-                        size: 14,
-                        color: Colors.white.withOpacity(0.4),
+                );
+                setState(() {});
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: firstSongImage == null
+                            ? LinearGradient(
+                                colors: [
+                                  const Color(0xFFBB6BD9).withOpacity(0.3),
+                                  const Color(0xFF00D9FF).withOpacity(0.2),
+                                ],
+                              )
+                            : null,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFBB6BD9).withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        playlist.isPublic ? "Public" : "Private",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.4),
-                          fontSize: 12,
+                      child: firstSongImage != null && firstSongImage.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                firstSongImage,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(
+                                    Icons.playlist_play,
+                                    color: Color(0xFFBB6BD9),
+                                    size: 32,
+                                  );
+                                },
+                              ),
+                            )
+                          : const Icon(
+                              Icons.playlist_play,
+                              color: Color(0xFFBB6BD9),
+                              size: 32,
+                            ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            playlist.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          if (playlist.description != null &&
+                              playlist.description!.isNotEmpty)
+                            Text(
+                              playlist.description!,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(
+                                playlist.isPublic ? Icons.public : Icons.lock,
+                                size: 13,
+                                color: Colors.white.withOpacity(0.4),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                playlist.isPublic ? "Công khai" : "Riêng tư",
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.4),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Icon(
+                                Icons.music_note,
+                                size: 13,
+                                color: Colors.white.withOpacity(0.4),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$songCount bài hát',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.4),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      icon: Icon(
+                        Icons.more_vert,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                      color: const Color(0xFF1A0F2E),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: const Color(0xFFBB6BD9).withOpacity(0.3),
                         ),
                       ),
-                    ],
-                  ),
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _showEditPlaylistDialog(playlist);
+                        } else if (value == 'delete') {
+                          _showDeletePlaylistDialog(playlist);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              ShaderMask(
+                                shaderCallback: (bounds) =>
+                                    const LinearGradient(
+                                      colors: [
+                                        Color(0xFFFF6B9D),
+                                        Color(0xFFBB6BD9),
+                                      ],
+                                    ).createShader(bounds),
+                                child: const Icon(
+                                  Icons.edit,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Chỉnh sửa',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: const [
+                              Icon(Icons.delete, color: Colors.red, size: 20),
+                              SizedBox(width: 12),
+                              Text('Xóa', style: TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-            trailing: PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.white),
-              color: const Color(0xFF2A2139),
-              onSelected: (value) {
-                if (value == 'edit') {
-                  _showEditPlaylistDialog(playlist);
-                } else if (value == 'delete') {
-                  _showDeletePlaylistDialog(playlist);
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit, color: Colors.white, size: 20),
-                      SizedBox(width: 8),
-                      Text('Edit', style: TextStyle(color: Colors.white)),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete, color: Colors.red, size: 20),
-                      SizedBox(width: 8),
-                      Text('Delete', style: TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                CupertinoPageRoute(
-                  builder: (context) => PlaylistDetailPage(
-                    playlist: playlist,
-                    onSongPlay: widget.onSongPlay,
-                  ),
-                ),
-              );
-            },
           ),
         );
       },
@@ -296,10 +516,23 @@ class _PlaylistPageState extends State<PlaylistPage> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF2A2139),
-          title: const Text(
-            'Create Playlist',
-            style: TextStyle(color: Colors.white),
+          backgroundColor: const Color(0xFF1A0F2E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: const Color(0xFFBB6BD9).withOpacity(0.3)),
+          ),
+          title: ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [Color(0xFFFF6B9D), Color(0xFFBB6BD9)],
+            ).createShader(bounds),
+            child: const Text(
+              'Tạo Playlist',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+              ),
+            ),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -308,32 +541,42 @@ class _PlaylistPageState extends State<PlaylistPage> {
                 controller: nameController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: 'Playlist Name',
+                  labelText: 'Tên Playlist',
                   labelStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
                   enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
                       color: Colors.white.withOpacity(0.3),
                     ),
                   ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF9B4DE0)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFBB6BD9),
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextField(
                 controller: descriptionController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: 'Description (optional)',
+                  labelText: 'Mô tả (tùy chọn)',
                   labelStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
                   enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
                       color: Colors.white.withOpacity(0.3),
                     ),
                   ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF9B4DE0)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFBB6BD9),
+                      width: 2,
+                    ),
                   ),
                 ),
                 maxLines: 2,
@@ -348,10 +591,12 @@ class _PlaylistPageState extends State<PlaylistPage> {
                         isPublic = value ?? false;
                       });
                     },
-                    activeColor: const Color(0xFF9B4DE0),
+                    activeColor: const Color(0xFFBB6BD9),
+                    checkColor: Colors.white,
+                    side: BorderSide(color: Colors.white.withOpacity(0.3)),
                   ),
                   const Text(
-                    'Make public',
+                    'Đặt công khai',
                     style: TextStyle(color: Colors.white),
                   ),
                 ],
@@ -362,30 +607,42 @@ class _PlaylistPageState extends State<PlaylistPage> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
-                'Cancel',
+                'Hủy',
                 style: TextStyle(color: Colors.white.withOpacity(0.6)),
               ),
             ),
-            ElevatedButton(
-              onPressed: () async {
-                if (nameController.text.trim().isEmpty) {
-                  return;
-                }
-                Navigator.pop(context);
-                await _viewModel.createPlaylist(
-                  nameController.text.trim(),
-                  descriptionController.text.trim().isEmpty
-                      ? null
-                      : descriptionController.text.trim(),
-                  isPublic,
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF9B4DE0),
+            Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFF6B9D), Color(0xFFBB6BD9)],
+                ),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
-                'Create',
-                style: TextStyle(color: Colors.white),
+              child: ElevatedButton(
+                onPressed: () async {
+                  if (nameController.text.trim().isEmpty) {
+                    return;
+                  }
+                  Navigator.pop(context);
+                  await _viewModel.createPlaylist(
+                    nameController.text.trim(),
+                    descriptionController.text.trim().isEmpty
+                        ? null
+                        : descriptionController.text.trim(),
+                    isPublic,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                ),
+                child: const Text(
+                  'Tạo',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
           ],
@@ -405,10 +662,23 @@ class _PlaylistPageState extends State<PlaylistPage> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF2A2139),
-          title: const Text(
-            'Edit Playlist',
-            style: TextStyle(color: Colors.white),
+          backgroundColor: const Color(0xFF1A0F2E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: const Color(0xFFBB6BD9).withOpacity(0.3)),
+          ),
+          title: ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [Color(0xFFFF6B9D), Color(0xFFBB6BD9)],
+            ).createShader(bounds),
+            child: const Text(
+              'Chỉnh sửa Playlist',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+              ),
+            ),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -417,32 +687,42 @@ class _PlaylistPageState extends State<PlaylistPage> {
                 controller: nameController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: 'Playlist Name',
+                  labelText: 'Tên Playlist',
                   labelStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
                   enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
                       color: Colors.white.withOpacity(0.3),
                     ),
                   ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF9B4DE0)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFBB6BD9),
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               TextField(
                 controller: descriptionController,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: 'Description (optional)',
+                  labelText: 'Mô tả (tùy chọn)',
                   labelStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
                   enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
                       color: Colors.white.withOpacity(0.3),
                     ),
                   ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF9B4DE0)),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFBB6BD9),
+                      width: 2,
+                    ),
                   ),
                 ),
                 maxLines: 2,
@@ -457,10 +737,12 @@ class _PlaylistPageState extends State<PlaylistPage> {
                         isPublic = value ?? false;
                       });
                     },
-                    activeColor: const Color(0xFF9B4DE0),
+                    activeColor: const Color(0xFFBB6BD9),
+                    checkColor: Colors.white,
+                    side: BorderSide(color: Colors.white.withOpacity(0.3)),
                   ),
                   const Text(
-                    'Make public',
+                    'Đặt công khai',
                     style: TextStyle(color: Colors.white),
                   ),
                 ],
@@ -471,29 +753,44 @@ class _PlaylistPageState extends State<PlaylistPage> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
-                'Cancel',
+                'Hủy',
                 style: TextStyle(color: Colors.white.withOpacity(0.6)),
               ),
             ),
-            ElevatedButton(
-              onPressed: () async {
-                if (nameController.text.trim().isEmpty) {
-                  return;
-                }
-                Navigator.pop(context);
-                await _viewModel.updatePlaylist(
-                  playlist.id,
-                  nameController.text.trim(),
-                  descriptionController.text.trim().isEmpty
-                      ? null
-                      : descriptionController.text.trim(),
-                  isPublic,
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF9B4DE0),
+            Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFF6B9D), Color(0xFFBB6BD9)],
+                ),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text('Save', style: TextStyle(color: Colors.white)),
+              child: ElevatedButton(
+                onPressed: () async {
+                  if (nameController.text.trim().isEmpty) {
+                    return;
+                  }
+                  Navigator.pop(context);
+                  await _viewModel.updatePlaylist(
+                    playlist.id,
+                    nameController.text.trim(),
+                    descriptionController.text.trim().isEmpty
+                        ? null
+                        : descriptionController.text.trim(),
+                    isPublic,
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                ),
+                child: const Text(
+                  'Lưu',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -505,8 +802,8 @@ class _PlaylistPageState extends State<PlaylistPage> {
     showCupertinoDialog(
       context: context,
       builder: (context) => CupertinoAlertDialog(
-        title: const Text('Delete Playlist'),
-        content: Text('Are you sure you want to delete "${playlist.name}"?'),
+        title: const Text('Xóa Playlist'),
+        content: Text('Bạn có chắc chắn muốn xóa "${playlist.name}"?'),
         actions: [
           CupertinoDialogAction(
             isDestructiveAction: true,
@@ -514,12 +811,12 @@ class _PlaylistPageState extends State<PlaylistPage> {
               Navigator.pop(context);
               await _viewModel.deletePlaylist(playlist.id);
             },
-            child: const Text('Delete'),
+            child: const Text('Xóa'),
           ),
           CupertinoDialogAction(
             isDefaultAction: true,
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Hủy'),
           ),
         ],
       ),

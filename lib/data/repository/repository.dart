@@ -7,6 +7,7 @@ abstract interface class Repository {
   Future<List<Song>?> loadData();
   Future<bool> incrementCounter(String songId);
   Future<List<Song>?> loadRandomSongs(int limit);
+  Future<List<Song>?> loadTrendingSongs(int limit);
 }
 
 class DefaultRepository implements Repository {
@@ -47,5 +48,10 @@ class DefaultRepository implements Repository {
   @override
   Future<List<Song>?> loadRandomSongs(int limit) async {
     return await _remoteDataSource.loadRandomSongs(limit);
+  }
+
+  @override
+  Future<List<Song>?> loadTrendingSongs(int limit) async {
+    return await _remoteDataSource.loadTrendingSongs(limit);
   }
 }

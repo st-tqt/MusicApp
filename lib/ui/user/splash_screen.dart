@@ -51,54 +51,62 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.purple.shade400,
-              Colors.blue.shade600,
-            ],
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Logo
-              Container(
-                padding: const EdgeInsets.all(24),
+      backgroundColor: const Color(0xFF1a1a2e),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Logo với gradient border
+            Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.red,
+                    Colors.purple,
+                    Colors.blue,
+                    Colors.cyan,
+                  ],
+                ),
+              ),
+              padding: const EdgeInsets.all(4),
+              child: Container(
                 decoration: const BoxDecoration(
-                  color: Colors.white,
+                  color: Color(0xFF1a1a2e),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  Icons.music_note,
-                  size: 80,
-                  color: Colors.purple.shade400,
+                child: Center(
+                  child: Icon(
+                    Icons.music_note,
+                    size: 80,
+                    color: Colors.blue.shade300,
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
+            ),
+            const SizedBox(height: 24),
 
-              // App Name
-              const Text(
-                "Music App",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 48),
-
-              // Loading Indicator
-              const CircularProgressIndicator(
+            // App Name
+            const Text(
+              "Music App",
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
                 color: Colors.white,
-                strokeWidth: 3,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 48),
+
+            // Loading Indicator
+            CircularProgressIndicator(
+              color: Colors.blue.shade300,
+              strokeWidth: 3,
+            ),
+          ],
         ),
       ),
     );

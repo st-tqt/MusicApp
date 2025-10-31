@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/model/user.dart';
 import '../home/viewmodel.dart';
 import '../now_playing/audio_player_manager.dart';
-import '../favorite/favorite_page.dart';
 
 class AccountTab extends StatelessWidget {
   AccountTab({super.key});

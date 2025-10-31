@@ -5,7 +5,6 @@ import '../../data/model/song.dart';
 import '../favorite/favorite_detail_page.dart';
 import 'playlist_viewmodel.dart';
 import 'playlist_detail_page.dart';
-import '../favorite/favorite_page.dart';
 
 class PlaylistPage extends StatefulWidget {
   final Function(Song, List<Song>)? onSongPlay;

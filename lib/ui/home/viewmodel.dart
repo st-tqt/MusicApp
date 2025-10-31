@@ -15,8 +15,8 @@ class MusicAppViewModel {
   final _repository = DefaultRepository();
   final _historyRepository = DefaultListeningHistoryRepository();
 
-  void loadSongs() {
-    _repository.loadData().then((value) {
+  Future<void> loadSongs() async {
+    await _repository.loadData().then((value) {
       if (value != null) {
         songStream.add(value);
       }

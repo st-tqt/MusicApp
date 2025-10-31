@@ -5,15 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:music_app/ui/home/viewmodel.dart';
 import 'package:music_app/ui/now_playing/audio_player_manager.dart';
-import 'package:music_app/ui/settings/settings.dart';
 import 'package:music_app/ui/user/user.dart';
 
 import '../../data/model/song.dart';
 import '../../data/repository/listening_history_repository.dart';
+import '../favorite/favorite_detail_page.dart';
 import '../now_playing/mini_player.dart';
 import '../now_playing/playing.dart';
 import '../playlist/add_to_playlist_dialog.dart';
 import '../playlist/playlist_page.dart';
+import '../search/search_page.dart';
 
 class MusicApp extends StatelessWidget {
   const MusicApp({super.key});
@@ -78,13 +79,17 @@ class _MusicHomePageState extends State<MusicHomePage> {
           updateCurrentSong(song, songs);
         },
       ),
+      SearchTab(
+        onSongPlay: (song, songs) {
+          updateCurrentSong(song, songs);
+        },
+      ),
       PlaylistTab(
         onSongPlay: (song, songs) {
           updateCurrentSong(song, songs);
         },
       ),
       AccountTab(),
-      const SettingTab(),
     ];
 
     _songChangedSubscription = _audioManager.songChangedStream.listen((song) {
@@ -139,16 +144,16 @@ class _MusicHomePageState extends State<MusicHomePage> {
               items: const [
                 BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
                 BottomNavigationBarItem(
+                  icon: Icon(Icons.search),
+                  label: 'Search',
+                ),
+                BottomNavigationBarItem(
                   icon: Icon(Icons.playlist_play),
                   label: 'Playlists',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.person),
                   label: 'Account',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.settings),
-                  label: 'Settings',
                 ),
               ],
             ),
@@ -274,54 +279,81 @@ class _HomeTabPageState extends State<HomeTabPage> {
     if (showLoading) {
       return getProgressBar();
     } else {
-      return CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            floating: true,
-            backgroundColor: const Color(0xFF0A0118),
-            elevation: 0,
-            expandedHeight: 80,
-            flexibleSpace: FlexibleSpaceBar(
-              centerTitle: true,
-              title: ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [
-                    Color(0xFFFF6B9D),
-                    Color(0xFFBB6BD9),
-                    Color(0xFF00D9FF),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ).createShader(bounds),
-                child: const Text(
-                  'Music App',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+      return RefreshIndicator(
+        // Refresh
+        color: const Color(0xFFFF6B9D),
+        backgroundColor: const Color(0xFF1A0F2E),
+
+        onRefresh: _handleRefresh,
+
+        displacement: 40,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              floating: true,
+              backgroundColor: const Color(0xFF0A0118),
+              elevation: 0,
+              expandedHeight: 80,
+              flexibleSpace: FlexibleSpaceBar(
+                centerTitle: true,
+                title: ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [
+                      Color(0xFFFF6B9D),
+                      Color(0xFFBB6BD9),
+                      Color(0xFF00D9FF),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(bounds),
+                  child: const Text(
+                    'Music App',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildRecommendedSection(),
-                const SizedBox(height: 32),
-                _buildQuickAccessSection(),
-                const SizedBox(height: 32),
-                _buildRecentlyPlayedSection(),
-                const SizedBox(height: 32),
-                _buildTrendingSection(),
-                const SizedBox(height: 100),
-              ],
+            SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildRecommendedSection(),
+                  const SizedBox(height: 32),
+                  _buildQuickAccessSection(),
+                  const SizedBox(height: 32),
+                  _buildRecentlyPlayedSection(),
+                  const SizedBox(height: 32),
+                  _buildTrendingSection(),
+                  const SizedBox(height: 100),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
     }
+  }
+
+  Future<void> _handleRefresh() async {
+    setState(() {
+      isLoadingRecommended = true;
+      isLoadingRecent = true;
+      isLoadingTrending = true;
+    });
+
+    await Future.wait([
+      _viewModel.loadSongs(),
+      _viewModel.loadRecommendedSongs(),
+      _viewModel.loadTrendingSongs(),
+      _viewModel.loadRecentSongs(),
+    ]);
+
+    await Future.delayed(const Duration(milliseconds: 300));
   }
 
   Widget _buildRecommendedSection() {
@@ -543,7 +575,15 @@ class _HomeTabPageState extends State<HomeTabPage> {
                 margin: const EdgeInsets.only(right: 12),
                 child: InkWell(
                   onTap: () {
-                    if (index == 3 && songs.isNotEmpty) {
+                    if (index == 0) {
+                      Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                          builder: (context) =>
+                              FavoriteDetailPage(onSongPlay: widget.onSongPlay),
+                        ),
+                      );
+                    } else if (index == 3 && songs.isNotEmpty) {
                       final shuffled = List<Song>.from(songs)..shuffle();
                       widget.onSongPlay?.call(shuffled[0], shuffled);
                       Navigator.of(context, rootNavigator: true).push(
@@ -632,51 +672,51 @@ class _HomeTabPageState extends State<HomeTabPage> {
         const SizedBox(height: 12),
         isLoadingRecent
             ? const SizedBox(
-          height: 180,
-          child: Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Color(0xFFFF6B9D),
-              ),
-            ),
-          ),
-        )
-            : recentSongs.isEmpty
-            ? SizedBox(
-          height: 180,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.history,
-                  size: 48,
-                  color: Colors.white.withOpacity(0.3),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Chưa có lịch sử nghe nhạc',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
-                    fontSize: 14,
+                height: 180,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFFFF6B9D),
+                    ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        )
+              )
+            : recentSongs.isEmpty
+            ? SizedBox(
+                height: 180,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.history,
+                        size: 48,
+                        color: Colors.white.withOpacity(0.3),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Chưa có lịch sử nghe nhạc',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
             : SizedBox(
-          height: 180,
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            scrollDirection: Axis.horizontal,
-            itemCount: recentSongs.take(10).length,
-            itemBuilder: (context, index) {
-              final song = recentSongs[index];
-              return _buildAlbumCard(song, recentSongs);
-            },
-          ),
-        ),
+                height: 180,
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: recentSongs.take(10).length,
+                  itemBuilder: (context, index) {
+                    final song = recentSongs[index];
+                    return _buildAlbumCard(song, recentSongs);
+                  },
+                ),
+              ),
       ],
     );
   }
@@ -721,25 +761,25 @@ class _HomeTabPageState extends State<HomeTabPage> {
         const SizedBox(height: 12),
         isLoadingTrending
             ? const SizedBox(
-          height: 200,
-          child: Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Color(0xFFFF6B9D),
-              ),
-            ),
-          ),
-        )
+                height: 200,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFFFF6B9D),
+                    ),
+                  ),
+                ),
+              )
             : ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: trendingSongs.length,
-          itemBuilder: (context, index) {
-            final song = trendingSongs[index];
-            return _buildTrendingItem(song, index + 1);
-          },
-        ),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: trendingSongs.length,
+                itemBuilder: (context, index) {
+                  final song = trendingSongs[index];
+                  return _buildTrendingItem(song, index + 1);
+                },
+              ),
       ],
     );
   }

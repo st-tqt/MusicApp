@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:music_app/ui/user/login_page.dart';
 import 'package:music_app/ui/home/home.dart';
 
+import '../home/music_home_page.dart';
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 

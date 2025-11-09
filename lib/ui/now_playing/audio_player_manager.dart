@@ -27,7 +27,7 @@ class AudioPlayerManager {
   LoopMode loopMode = LoopMode.off;
   bool _isShuffle = false;
 
-  // THAY ĐỔI: Dùng StreamController thay vì callback
+  // Dùng StreamController thay vì callback
   final _songChangedController = StreamController<Song>.broadcast();
 
   Stream<Song> get songChangedStream => _songChangedController.stream;

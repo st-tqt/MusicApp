@@ -11,7 +11,6 @@ import '../now_playing/mini_player.dart';
 import '../now_playing/playing.dart';
 import '../playlist/playlist_page.dart';
 import '../search/search_page.dart';
-import 'home.dart' hide HomeTab;
 
 class MusicHomePage extends StatefulWidget {
   const MusicHomePage({super.key});
@@ -22,6 +21,7 @@ class MusicHomePage extends StatefulWidget {
 
 class _MusicHomePageState extends State<MusicHomePage> {
   int _currentTabIndex = 0;
+  int _tabReloadKey = 0;
 
   late List<Widget> _tabs;
 
@@ -89,6 +89,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
       child: Stack(
         children: [
           CupertinoTabScaffold(
+            key: ValueKey(_tabReloadKey),
             backgroundColor: const Color(0xFF0A0118),
             tabBar: CupertinoTabBar(
               backgroundColor: const Color(0xFF0A0118),
@@ -101,6 +102,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
               onTap: (index) {
                 setState(() {
                   _currentTabIndex = index;
+                  _tabReloadKey++;
                 });
               },
               items: const [
@@ -121,6 +123,7 @@ class _MusicHomePageState extends State<MusicHomePage> {
             ),
             tabBuilder: (BuildContext context, int index) {
               return CupertinoTabView(
+                key: ValueKey('$index-$_tabReloadKey'),
                 builder: (context) {
                   return _tabs[index];
                 },

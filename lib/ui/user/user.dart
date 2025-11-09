@@ -2,13 +2,18 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:music_app/ui/playlist/playlist_page.dart';
+import 'package:music_app/ui/user/user_viewmodel.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/model/song.dart';
 import '../../data/model/user.dart';
-import '../home/viewmodel.dart';
+import '../favorite/favorite_detail_page.dart';
 import '../now_playing/audio_player_manager.dart';
+import 'edit_profile_page.dart';
 
 class AccountTab extends StatelessWidget {
-  AccountTab({super.key});
+  final Function(Song, List<Song>)? onSongPlay;
+
+  const AccountTab({super.key, this.onSongPlay});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +22,9 @@ class AccountTab extends StatelessWidget {
 }
 
 class AccountPage extends StatefulWidget {
-  const AccountPage({super.key});
+  final Function(Song, List<Song>)? onSongPlay;
+
+  const AccountPage({super.key, this.onSongPlay});
 
   @override
   State<AccountPage> createState() => _AccountPageState();
@@ -171,18 +178,29 @@ class _AccountPageState extends State<AccountPage> {
       children: [
         _buildMenuItem(
           icon: Icons.edit,
-          title: "Edit Profile",
-          subtitle: "Update your personal information",
+          title: "Chỉnh sửa hồ sơ",
+          subtitle: "Thay đổi tên và ảnh đại diện của bạn",
           gradient: const [Color(0xFFFF6B9D), Color(0xFFFF8FAB)],
-          onTap: () {
-            // TODO: chuyển sang trang chỉnh sửa hồ sơ
+          onTap: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => EditProfilePage(user: _user!),
+              ),
+            );
+
+            if (result != null && result is UserModel) {
+              setState(() {
+                _user = result;
+              });
+            }
           },
         ),
         const SizedBox(height: 12),
         _buildMenuItem(
           icon: Icons.playlist_play,
           title: "My Playlists",
-          subtitle: "Manage your music collections",
+          subtitle: "Danh sách phát",
           gradient: const [Color(0xFFBB6BD9), Color(0xFFD98FFF)],
           onTap: () {
             Navigator.push(
@@ -194,18 +212,24 @@ class _AccountPageState extends State<AccountPage> {
         const SizedBox(height: 12),
         _buildMenuItem(
           icon: Icons.favorite,
-          title: "Favorite Songs",
-          subtitle: "Your liked tracks",
+          title: "Bài hát yêu thích",
+          subtitle: "Danh sách bài hát yêu thích của bạn",
           gradient: const [Color(0xFFFF6B9D), Color(0xFFBB6BD9)],
           onTap: () {
-            // Navigate to favorites
+            Navigator.push(
+              context,
+              CupertinoPageRoute(
+                builder: (context) =>
+                    FavoriteDetailPage(onSongPlay: widget.onSongPlay),
+              ),
+            );
           },
         ),
         const SizedBox(height: 12),
         _buildMenuItem(
           icon: Icons.settings,
-          title: "Settings",
-          subtitle: "App preferences and options",
+          title: "Preview profile",
+          subtitle: "Xem trang cá nhân dưới tư cách khách",
           gradient: const [Color(0xFF00D9FF), Color(0xFF4DE8FF)],
           onTap: () {
             // TODO: mở tab settings

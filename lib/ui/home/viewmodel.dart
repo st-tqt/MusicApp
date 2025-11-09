@@ -51,18 +51,3 @@ class MusicAppViewModel {
     recentStream.close();
   }
 }
-
-class UserViewModel {
-  final UserRepository _repository = UserRepository();
-  final StreamController<UserModel?> userStream =
-  StreamController<UserModel?>.broadcast();
-
-  loadCurrentUser() async {
-    final user = await _repository.fetchCurrentUser();
-    userStream.add(user);
-  }
-
-  void dispose() {
-    userStream.close();
-  }
-}

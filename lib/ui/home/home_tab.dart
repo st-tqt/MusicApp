@@ -248,7 +248,9 @@ class _HomeTabPageState extends State<HomeTabPage> {
   void showBottomSheet(Song song) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) {
         return Container(
           decoration: BoxDecoration(
@@ -266,7 +268,7 @@ class _HomeTabPageState extends State<HomeTabPage> {
           child: ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             child: Container(
-              height: 200,
+              height: 100,
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

@@ -198,7 +198,7 @@ class RemotePlaylistDataSource implements PlaylistDataSource {
     try {
       final response = await supabase
           .from('playlists')
-          .select()
+          .select('*, profiles(name, avatar_url)')
           .eq('is_public', true)
           .order('created_at', ascending: false);
 

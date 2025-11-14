@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../data/repository/user_repository.dart';
-import '../../data/model/user.dart';
+import '../../../data/repository/user_repository.dart';
+import '../../../data/model/user.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});

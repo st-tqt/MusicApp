@@ -2,13 +2,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:music_app/ui/playlist/playlist_page.dart';
+import 'package:music_app/ui/user/preview_profile_page.dart';
 import 'package:music_app/ui/user/user_viewmodel.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/model/song.dart';
 import '../../data/model/user.dart';
 import '../favorite/favorite_detail_page.dart';
 import '../now_playing/audio_player_manager.dart';
-import 'edit_profile_page.dart';
+import 'CRUD/edit_profile_page.dart';
 
 class AccountTab extends StatelessWidget {
   final Function(Song, List<Song>)? onSongPlay;
@@ -232,7 +233,15 @@ class _AccountPageState extends State<AccountPage> {
           subtitle: "Xem trang cá nhân dưới tư cách khách",
           gradient: const [Color(0xFF00D9FF), Color(0xFF4DE8FF)],
           onTap: () {
-            // TODO: mở tab settings
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PreviewProfilePage(
+                  user: _user!,
+                  onSongPlay: widget.onSongPlay,
+                ),
+              ),
+            );
           },
         ),
         const SizedBox(height: 24),

@@ -12,7 +12,7 @@ void showAddToPlaylistDialog(BuildContext context, Song song) {
   );
 }
 
-/// Wrapper widget để load data trước khi hiển thị dialog
+/// Wrapper widgets để load data trước khi hiển thị dialog
 class AddToPlaylistDialogWrapper extends StatefulWidget {
   final Song song;
 

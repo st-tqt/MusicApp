@@ -5,6 +5,8 @@ import '../../data/model/song.dart';
 import '../../data/repository/playlist_repository.dart';
 
 class PlaylistViewModel {
+  final _supabase = Supabase.instance.client;
+
   final _repository = DefaultPlaylistRepository();
   final _playlistsController = StreamController<List<Playlist>>.broadcast();
   final _loadingController = StreamController<bool>.broadcast();
@@ -22,7 +24,6 @@ class PlaylistViewModel {
     _loadingController.add(false);
   }
 
-  // Thêm method mới để trả về List<Playlist> trực tiếp
   Future<List<Playlist>?> getUserPlaylists() async {
     return await _repository.loadUserPlaylists();
   }
@@ -81,6 +82,28 @@ class PlaylistViewModel {
 
   Future<List<Playlist>?> loadPublicPlaylists() async {
     return await _repository.loadPublicPlaylists();
+  }
+
+  Future<void> loadPlaylistsForUser(String userId) async {
+    _loadingController.add(true);
+    try {
+      final response = await _supabase
+          .from('playlists')
+          .select('*, profiles(name, avatar_url)')
+          .eq('user_id', userId)
+          .eq('is_public', true);
+
+      final playlists = (response as List)
+          .map((data) => Playlist.fromMap(data))
+          .toList();
+
+      _playlistsController.add(playlists);
+
+    } catch (e) {
+      print('Error loading playlists for user $userId: $e');
+      _playlistsController.addError(e);
+    }
+    _loadingController.add(false);
   }
 
   void dispose() {

@@ -42,6 +42,9 @@ dependencies:
   flutter_phoenix: ^1.1.1
   image_picker: ^1.1.2
   marquee: ^2.3.0
+  share_plus: ^12.0.1
+  app_links: ^6.4.1
+  clipboard: ^2.0.2
 
 dev_dependencies:
   flutter_test:

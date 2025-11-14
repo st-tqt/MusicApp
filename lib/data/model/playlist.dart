@@ -8,6 +8,8 @@ class Playlist {
     required this.isPublic,
     required this.createdAt,
     required this.updatedAt,
+    this.userName,
+    this.userAvatar,
   });
 
   factory Playlist.fromMap(Map<String, dynamic> map) {
@@ -20,6 +22,9 @@ class Playlist {
       isPublic: map['is_public'] as bool? ?? false,
       createdAt: DateTime.parse(map['created_at'] as String),
       updatedAt: DateTime.parse(map['updated_at'] as String),
+
+      userName: map['profiles']?['name'] as String?,
+      userAvatar: map['profiles']?['avatar_url'] as String?,
     );
   }
 
@@ -44,11 +49,13 @@ class Playlist {
   bool isPublic;
   DateTime createdAt;
   DateTime updatedAt;
+  String? userName;
+  String? userAvatar;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is Playlist && runtimeType == other.runtimeType && id == other.id;
+      other is Playlist && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;
@@ -56,7 +63,8 @@ class Playlist {
   @override
   String toString() {
     return 'Playlist{id: $id, userId: $userId, name: $name, description: $description, '
-        'image: $image, isPublic: $isPublic, createdAt: $createdAt, updatedAt: $updatedAt}';
+        'image: $image, isPublic: $isPublic, userName: $userName, '
+        'createdAt: $createdAt, updatedAt: $updatedAt}';
   }
 }
 
@@ -98,7 +106,9 @@ class PlaylistSong {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is PlaylistSong && runtimeType == other.runtimeType && id == other.id;
+      other is PlaylistSong &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
 
   @override
   int get hashCode => id.hashCode;

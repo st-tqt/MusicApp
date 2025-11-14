@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:music_app/ui/user/user_viewmodel.dart';
-import '../../data/model/user.dart';
+import '../../../data/model/user.dart';
 
 class EditProfilePage extends StatefulWidget {
   final UserModel user;

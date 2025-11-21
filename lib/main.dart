@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:music_app/services/deep_link_service.dart';
-import 'package:music_app/ui/user/splash_screen.dart';
+import 'package:music_app/ui/user/auth/splash_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '../../data/model/song.dart';
 import '../now_playing/playing.dart';
+import '../now_playing/audio_player_manager.dart';
 import 'favorite_viewmodel.dart';
 
 class FavoriteDetailPage extends StatefulWidget {
@@ -15,6 +16,7 @@ class FavoriteDetailPage extends StatefulWidget {
 
 class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
   late FavoriteViewModel _viewModel;
+  final audioManager = AudioPlayerManager();
   List<Song> _songs = [];
   bool _isLoading = false;
 
@@ -43,7 +45,13 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
 
   void _playAllSongs() {
     if (_songs.isNotEmpty) {
+      // Cập nhật AudioPlayerManager
+      audioManager.updateSongUrl(_songs.first.source);
+      audioManager.updateCurrentIndex(0);
+
+      // Gọi callback
       widget.onSongPlay?.call(_songs.first, _songs);
+
       Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(
           builder: (context) =>
@@ -51,6 +59,23 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
         ),
       );
     }
+  }
+
+  void _playSong(Song song) {
+    final songIndex = _songs.indexWhere((s) => s.id == song.id);
+
+    // Cập nhật AudioPlayerManager
+    audioManager.updateSongUrl(song.source);
+    audioManager.updateCurrentIndex(songIndex);
+
+    // Gọi callback
+    widget.onSongPlay?.call(song, _songs);
+
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (context) => NowPlaying(playingSong: song, songs: _songs),
+      ),
+    );
   }
 
   Future<void> _removeSongFromFavorites(Song song) async {
@@ -121,7 +146,6 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
       backgroundColor: const Color(0xFF0A0118),
       body: CustomScrollView(
         slivers: [
-          // Header với ảnh và icon trái tim
           SliverAppBar(
             expandedHeight: 280,
             pinned: true,
@@ -147,7 +171,6 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Gradient background
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -161,8 +184,6 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
                       ),
                     ),
                   ),
-
-                  // Blurred background image
                   if (firstSongImage != null && firstSongImage.isNotEmpty)
                     Opacity(
                       opacity: 0.15,
@@ -173,8 +194,6 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
                             Container(),
                       ),
                     ),
-
-                  // Cover image với icon trái tim overlay
                   Center(
                     child: Container(
                       width: 160,
@@ -193,39 +212,38 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(20),
                         child:
-                            firstSongImage != null && firstSongImage.isNotEmpty
+                        firstSongImage != null && firstSongImage.isNotEmpty
                             ? Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  Image.network(
-                                    firstSongImage,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return _buildPlaceholderCover();
-                                    },
-                                  ),
-                                  // Overlay với icon trái tim
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                        colors: [
-                                          Colors.black.withOpacity(0.3),
-                                          Colors.transparent,
-                                        ],
-                                      ),
-                                    ),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.favorite,
-                                        size: 80,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
+                          fit: StackFit.expand,
+                          children: [
+                            Image.network(
+                              firstSongImage,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _buildPlaceholderCover();
+                              },
+                            ),
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Colors.black.withOpacity(0.3),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.favorite,
+                                  size: 80,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
                             : _buildPlaceholderCover(),
                       ),
                     ),
@@ -234,14 +252,11 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
               ),
             ),
           ),
-
-          // Thông tin và nút play
           SliverToBoxAdapter(
             child: Container(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
               child: Column(
                 children: [
-                  // Badges
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -258,10 +273,7 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
                       ),
                     ],
                   ),
-
                   const SizedBox(height: 20),
-
-                  // Play All Button
                   if (_songs.isNotEmpty)
                     InkWell(
                       onTap: _playAllSongs,
@@ -310,32 +322,30 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
               ),
             ),
           ),
-
-          // Danh sách bài hát
           _isLoading
               ? const SliverFillRemaining(
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Color(0xFFE91E63),
-                      ),
-                    ),
-                  ),
-                )
+            child: Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Color(0xFFE91E63),
+                ),
+              ),
+            ),
+          )
               : _songs.isEmpty
               ? SliverFillRemaining(child: _buildEmptyState())
               : SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final song = _songs[index];
-                      return _buildSongItem(song, index);
-                    }, childCount: _songs.length),
-                  ),
-                ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final song = _songs[index];
+                return _buildSongItem(song, index);
+              }, childCount: _songs.length),
+            ),
+          ),
         ],
       ),
     );
@@ -448,21 +458,12 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            widget.onSongPlay?.call(song, _songs);
-            Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute(
-                builder: (context) =>
-                    NowPlaying(playingSong: song, songs: _songs),
-              ),
-            );
-          },
+          onTap: () => _playSong(song),
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                // Song Image
                 Container(
                   width: 56,
                   height: 56,
@@ -480,19 +481,16 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
                     borderRadius: BorderRadius.circular(12),
                     child: song.image.isNotEmpty
                         ? Image.network(
-                            song.image,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return _buildSongPlaceholder();
-                            },
-                          )
+                      song.image,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildSongPlaceholder();
+                      },
+                    )
                         : _buildSongPlaceholder(),
                   ),
                 ),
-
                 const SizedBox(width: 12),
-
-                // Song Info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -526,10 +524,7 @@ class _FavoriteDetailPageState extends State<FavoriteDetailPage> {
                     ],
                   ),
                 ),
-
                 const SizedBox(width: 8),
-
-                // Menu Button
                 PopupMenuButton<String>(
                   icon: Icon(
                     Icons.more_vert_rounded,

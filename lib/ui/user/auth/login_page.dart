@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:music_app/ui/now_playing/audio_player_manager.dart';
-import 'package:music_app/ui/user/CRUD/register_page.dart';
+import 'package:music_app/ui/user/auth/register_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../home/home.dart';
 import '../../home/music_home_page.dart';

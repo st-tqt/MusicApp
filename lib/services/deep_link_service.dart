@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:app_links/app_links.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/model/user.dart';
-import '../ui/user/preview_profile_page.dart';
+import '../ui/user/profile/preview_profile_page.dart';
 
 class DeepLinkService {
   static final DeepLinkService _instance = DeepLinkService._internal();

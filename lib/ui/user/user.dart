@@ -2,14 +2,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:music_app/ui/playlist/playlist_page.dart';
-import 'package:music_app/ui/user/preview_profile_page.dart';
+import 'package:music_app/ui/user/profile/preview_profile_page.dart';
+import 'package:music_app/ui/user/search/search_user_page.dart';
 import 'package:music_app/ui/user/user_viewmodel.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/model/song.dart';
 import '../../data/model/user.dart';
 import '../favorite/favorite_detail_page.dart';
 import '../now_playing/audio_player_manager.dart';
-import 'CRUD/edit_profile_page.dart';
+import 'profile/edit_profile_page.dart';
 
 class AccountTab extends StatelessWidget {
   final Function(Song, List<Song>)? onSongPlay;
@@ -18,7 +19,7 @@ class AccountTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const AccountPage();
+    return AccountPage(onSongPlay: onSongPlay);
   }
 }
 
@@ -75,6 +76,39 @@ class _AccountPageState extends State<AccountPage> {
             pinned: true,
             backgroundColor: const Color(0xFF0A0118),
             elevation: 0,
+            // Thêm nút search ở góc phải
+            actions: [
+              IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFFF6B9D).withOpacity(0.3),
+                        const Color(0xFFBB6BD9).withOpacity(0.3),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.search,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SearchUsersPage(
+                        onSongPlay: widget.onSongPlay,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               centerTitle: true,
               background: Container(
@@ -106,9 +140,9 @@ class _AccountPageState extends State<AccountPage> {
                         ),
                         child: Container(
                           padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: const LinearGradient(
+                            gradient: LinearGradient(
                               colors: [Color(0xFFFF6B9D), Color(0xFFBB6BD9)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,

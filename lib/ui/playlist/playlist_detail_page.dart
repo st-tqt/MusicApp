@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '../../data/model/playlist.dart';
 import '../../data/model/song.dart';
+import '../now_playing/audio_player_manager.dart';
 import '../now_playing/playing.dart';
 import 'playlist_viewmodel.dart';
 
@@ -50,7 +51,12 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
 
   void _playAllSongs() {
     if (_songs.isNotEmpty) {
+      final audioManager = AudioPlayerManager();
+      audioManager.updateSongUrl(_songs.first.source);
+      audioManager.updateCurrentIndex(0);
+
       widget.onSongPlay?.call(_songs.first, _songs);
+
       Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(
           builder: (context) =>
@@ -205,31 +211,32 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(20),
-                        child: firstSongImage != null && firstSongImage.isNotEmpty
+                        child:
+                            firstSongImage != null && firstSongImage.isNotEmpty
                             ? Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.network(
-                              firstSongImage,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return _buildPlaceholderCover();
-                              },
-                            ),
-                            Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Colors.black.withOpacity(0.2),
-                                    Colors.transparent,
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.network(
+                                    firstSongImage,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return _buildPlaceholderCover();
+                                    },
+                                  ),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Colors.black.withOpacity(0.2),
+                                          Colors.transparent,
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
                             : _buildPlaceholderCover(),
                       ),
                     ),
@@ -320,30 +327,28 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
           // Danh sách bài hát
           _isLoading
               ? const SliverFillRemaining(
-            child: Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  Color(0xFFFF6B9D),
-                ),
-              ),
-            ),
-          )
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFFFF6B9D),
+                      ),
+                    ),
+                  ),
+                )
               : _songs.isEmpty
-              ? SliverFillRemaining(
-            child: _buildEmptyState(),
-          )
+              ? SliverFillRemaining(child: _buildEmptyState())
               : SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                  final song = _songs[index];
-                  return _buildSongItem(song, index);
-                },
-                childCount: _songs.length,
-              ),
-            ),
-          ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final song = _songs[index];
+                      return _buildSongItem(song, index);
+                    }, childCount: _songs.length),
+                  ),
+                ),
         ],
       ),
     );
@@ -359,11 +364,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
         ),
       ),
       child: const Center(
-        child: Icon(
-          Icons.playlist_play_rounded,
-          size: 80,
-          color: Colors.white,
-        ),
+        child: Icon(Icons.playlist_play_rounded, size: 80, color: Colors.white),
       ),
     );
   }
@@ -378,10 +379,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       decoration: BoxDecoration(
         color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -495,12 +493,12 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                     borderRadius: BorderRadius.circular(12),
                     child: song.image.isNotEmpty
                         ? Image.network(
-                      song.image,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildSongPlaceholder();
-                      },
-                    )
+                            song.image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildSongPlaceholder();
+                            },
+                          )
                         : _buildSongPlaceholder(),
                   ),
                 ),
